@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+*.log
+.env
+.venv/
+.poetry/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+build/
+.cache/
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+volumes/
+
+# Misc
+.idea/
+.vscode/
+.env.local
+

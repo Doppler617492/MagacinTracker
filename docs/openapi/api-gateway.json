@@ -1,0 +1,1375 @@
+{
+  "components": {
+    "schemas": {
+      "LoginRequest": {
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "username": {
+            "format": "email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "type": "object"
+      },
+      "ManualCompleteRequest": {
+        "properties": {
+          "quantity": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "quantity",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "ScanRequest": {
+        "properties": {
+          "barcode": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "barcode",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "default": "bearer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token"
+        ],
+        "type": "object"
+      },
+      "TrebovanjeDetail": {
+        "properties": {
+          "broj_stavki": {
+            "type": "integer"
+          },
+          "datum": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dokument_broj": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "magacin": {
+            "type": "string"
+          },
+          "radnja": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "stavke": {
+            "items": {
+              "$ref": "#/components/schemas/TrebovanjeItemDetail"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "TrebovanjeImportPayload": {
+        "properties": {
+          "datum": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dokument_broj": {
+            "type": "string"
+          },
+          "magacin_naziv": {
+            "type": "string"
+          },
+          "magacin_pantheon_id": {
+            "type": "string"
+          },
+          "radnja_naziv": {
+            "type": "string"
+          },
+          "radnja_pantheon_id": {
+            "type": "string"
+          },
+          "stavke": {
+            "items": {
+              "properties": {
+                "artikl_sifra": {
+                  "type": "string"
+                },
+                "barkod": {
+                  "type": "string"
+                },
+                "kolicina_trazena": {
+                  "type": "number"
+                },
+                "naziv": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "artikl_sifra",
+                "naziv",
+                "kolicina_trazena"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "dokument_broj",
+          "datum",
+          "magacin_pantheon_id",
+          "radnja_pantheon_id",
+          "stavke"
+        ],
+        "type": "object"
+      },
+      "TrebovanjeItemDetail": {
+        "properties": {
+          "artikl_sifra": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kolicina_trazena": {
+            "type": "number"
+          },
+          "kolicina_uradjena": {
+            "type": "number"
+          },
+          "naziv": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TrebovanjeListItem": {
+        "properties": {
+          "broj_stavki": {
+            "type": "integer"
+          },
+          "datum": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "dokument_broj": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "magacin": {
+            "type": "string"
+          },
+          "radnja": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "ukupno_trazena": {
+            "type": "number"
+          },
+          "ukupno_uradjena": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "dokument_broj"
+        ],
+        "type": "object"
+      },
+      "TrebovanjeListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TrebovanjeListItem"
+            },
+            "type": "array"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "TvSnapshot": {
+        "properties": {
+          "generated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "kpi": {
+            "properties": {
+              "active_workers": {
+                "type": "integer"
+              },
+              "completed_percentage": {
+                "type": "number"
+              },
+              "shift_ends_in_minutes": {
+                "type": "number"
+              },
+              "total_tasks_today": {
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "leaderboard": {
+            "items": {
+              "properties": {
+                "display_name": {
+                  "type": "string"
+                },
+                "items_completed": {
+                  "type": "integer"
+                },
+                "speed_per_hour": {
+                  "type": "number"
+                },
+                "task_completion": {
+                  "type": "number"
+                },
+                "user_id": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "queue": {
+            "items": {
+              "properties": {
+                "assigned_to": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "dokument": {
+                  "type": "string"
+                },
+                "radnja": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "WorkerTask": {
+        "properties": {
+          "dokument": {
+            "type": "string"
+          },
+          "due_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lokacija": {
+            "type": "string"
+          },
+          "progress": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "stavke_total": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "WorkerTaskDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WorkerTask"
+          },
+          {
+            "properties": {
+              "stavke": {
+                "items": {
+                  "properties": {
+                    "id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "naziv": {
+                      "type": "string"
+                    },
+                    "obradjena_kolicina": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "trazena_kolicina": {
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "ZaduznicaAssignment": {
+        "properties": {
+          "due_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ZaduznicaItemPayload"
+            },
+            "type": "array"
+          },
+          "magacioner_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ZaduznicaCreateRequest": {
+        "properties": {
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/ZaduznicaAssignment"
+            },
+            "type": "array"
+          },
+          "trebovanje_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ZaduznicaItemPayload": {
+        "properties": {
+          "quantity": {
+            "type": "number"
+          },
+          "trebovanje_stavka_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trebovanje_stavka_id",
+          "quantity"
+        ],
+        "type": "object"
+      },
+      "ZaduznicaReassignRequest": {
+        "properties": {
+          "target_magacioner_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_magacioner_id"
+        ],
+        "type": "object"
+      },
+      "ZaduznicaStatusUpdate": {
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Magacin API Gateway",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "Token response"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "Login"
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "Current user profile"
+      }
+    },
+    "/api/catalog/articles": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "items": {
+                      "items": {
+                        "properties": {
+                          "aktivan": {
+                            "type": "boolean"
+                          },
+                          "barkodovi": {
+                            "items": {
+                              "properties": {
+                                "is_primary": {
+                                  "type": "boolean"
+                                },
+                                "value": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "value"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "id": {
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "jedinica_mjere": {
+                            "type": "string"
+                          },
+                          "naziv": {
+                            "type": "string"
+                          },
+                          "sifra": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "sifra",
+                          "naziv",
+                          "jedinica_mjere",
+                          "aktivan",
+                          "barkodovi"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "page_size": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "page_size"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Catalog article list"
+          }
+        },
+        "summary": "List catalog articles",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/articles/{article_id}": {
+      "patch": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "article_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "aktivan": {
+                    "type": "boolean"
+                  },
+                  "barkodi": {
+                    "items": {
+                      "properties": {
+                        "is_primary": {
+                          "type": "boolean"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "value"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "jedinica_mjere": {
+                    "type": "string"
+                  },
+                  "naziv": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "aktivan": {
+                      "type": "boolean"
+                    },
+                    "barkodovi": {
+                      "items": {
+                        "properties": {
+                          "is_primary": {
+                            "type": "boolean"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "value"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "id": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "jedinica_mjere": {
+                      "type": "string"
+                    },
+                    "naziv": {
+                      "type": "string"
+                    },
+                    "sifra": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "sifra",
+                    "naziv",
+                    "jedinica_mjere",
+                    "aktivan",
+                    "barkodovi"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Updated article"
+          }
+        },
+        "summary": "Update catalog article",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/status": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "last_run": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "properties": {
+                            "cached": {
+                              "type": "boolean"
+                            },
+                            "created": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "deactivated": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "duration_ms": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "finished_at": {
+                              "format": "date-time",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "message": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "payload_hash": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "processed": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "source": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "started_at": {
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "updated": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "started_at",
+                            "cached"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "last_run"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Last sync"
+          }
+        },
+        "summary": "Fetch last catalog sync status",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/sync": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "deactivate_missing": {
+                    "type": "boolean"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "cached": {
+                      "type": "boolean"
+                    },
+                    "created": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "deactivated": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "duration_ms": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "finished_at": {
+                      "format": "date-time",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "message": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "payload_hash": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "processed": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "source": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "started_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "updated": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "started_at",
+                    "cached"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Sync executed"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "cached": {
+                      "type": "boolean"
+                    },
+                    "created": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "deactivated": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "duration_ms": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "finished_at": {
+                      "format": "date-time",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "message": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "payload_hash": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "processed": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "source": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "started_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "updated": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "started_at",
+                    "cached"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Sync skipped (cached)"
+          }
+        },
+        "summary": "Trigger catalog sync",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "summary": "Health check"
+      }
+    },
+    "/api/trebovanja": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "schema": {
+              "default": 20,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "magacin_id",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "radnja_id",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrebovanjeListResponse"
+                }
+              }
+            },
+            "description": "Paged result"
+          }
+        },
+        "summary": "List trebovanja"
+      }
+    },
+    "/api/trebovanja/import": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrebovanjeImportPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        },
+        "summary": "Import trebovanje"
+      }
+    },
+    "/api/trebovanja/{trebovanje_id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trebovanje_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrebovanjeDetail"
+                }
+              }
+            },
+            "description": "Trebovanje detail"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "summary": "Get trebovanje detail"
+      }
+    },
+    "/api/tv/snapshot": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TvSnapshot"
+                }
+              }
+            },
+            "description": "TV data"
+          }
+        },
+        "summary": "TV snapshot"
+      }
+    },
+    "/api/worker/tasks": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WorkerTask"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "List of tasks"
+          }
+        },
+        "summary": "List worker tasks"
+      }
+    },
+    "/api/worker/tasks/{zaduznica_id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "zaduznica_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerTaskDetail"
+                }
+              }
+            },
+            "description": "Task detail"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "summary": "Worker task detail"
+      }
+    },
+    "/api/worker/tasks/{zaduznica_stavka_id}/complete-manual": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "zaduznica_stavka_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        },
+        "summary": "Manual completion"
+      }
+    },
+    "/api/worker/tasks/{zaduznica_stavka_id}/scan": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "zaduznica_stavka_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        },
+        "summary": "Register scan"
+      }
+    },
+    "/api/zaduznice": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZaduznicaCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        },
+        "summary": "Create zaduznice"
+      }
+    },
+    "/api/zaduznice/{zaduznica_id}/reassign": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "zaduznica_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZaduznicaReassignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Updated"
+          }
+        },
+        "summary": "Reassign zaduznica"
+      }
+    },
+    "/api/zaduznice/{zaduznica_id}/status": {
+      "patch": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "zaduznica_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZaduznicaStatusUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Updated"
+          }
+        },
+        "summary": "Update zaduznica status"
+      }
+    }
+  }
+}

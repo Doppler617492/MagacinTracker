@@ -1,0 +1,105 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: magacin
+      POSTGRES_PASSWORD: magacin
+      POSTGRES_DB: magacin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: backend/services/api_gateway/Dockerfile
+    env_file:
+      - ../backend/services/api_gateway/.env.example
+    depends_on:
+      - task-service
+      - catalog-service
+    ports:
+      - "8000:8000"
+
+  task-service:
+    build:
+      context: ..
+      dockerfile: backend/services/task_service/Dockerfile
+    env_file:
+      - ../backend/services/task_service/.env.example
+    depends_on:
+      - postgres
+    ports:
+      - "8001:8001"
+
+  catalog-service:
+    build:
+      context: ..
+      dockerfile: backend/services/catalog_service/Dockerfile
+    env_file:
+      - ../backend/services/catalog_service/.env.example
+    depends_on:
+      - postgres
+    ports:
+      - "8002:8002"
+
+  import-service:
+    build:
+      context: ..
+      dockerfile: backend/services/import_service/Dockerfile
+    env_file:
+      - ../backend/services/import_service/.env.example
+    depends_on:
+      - task-service
+    volumes:
+      - import_files:/import
+    ports:
+      - "8003:8003"
+
+  realtime-worker:
+    build:
+      context: ..
+      dockerfile: backend/services/realtime_worker/Dockerfile
+    env_file:
+      - ../backend/services/realtime_worker/.env.example
+    depends_on:
+      - redis
+
+  admin-frontend:
+    build:
+      context: ..
+      dockerfile: frontend/admin/Dockerfile
+    depends_on:
+      - api-gateway
+    ports:
+      - "4173:80"
+
+  pwa-frontend:
+    build:
+      context: ..
+      dockerfile: frontend/pwa/Dockerfile
+    depends_on:
+      - api-gateway
+    ports:
+      - "4174:80"
+
+  tv-frontend:
+    build:
+      context: ..
+      dockerfile: frontend/tv/Dockerfile
+    depends_on:
+      - api-gateway
+    ports:
+      - "4175:80"
+
+volumes:
+  postgres_data:
+  import_files:

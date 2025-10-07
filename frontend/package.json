@@ -1,0 +1,16 @@
+{
+  "name": "magacin-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "admin",
+    "pwa",
+    "tv"
+  ],
+  "scripts": {
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  }
+}

@@ -1,0 +1,97 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    env_file: .env
+    ports:
+      - "6379:6379"
+
+  task-service:
+    build:
+      context: .
+      dockerfile: backend/services/task_service/Dockerfile
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8001:8001"
+
+  import-service:
+    build:
+      context: .
+      dockerfile: backend/services/import_service/Dockerfile
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+      - task-service
+    volumes:
+      - ./imports:${IMPORT_WATCH_PATH:-/imports}
+    ports:
+      - "8003:8003"
+
+  realtime-worker:
+    build:
+      context: .
+      dockerfile: backend/services/realtime_worker/Dockerfile
+    env_file: .env
+    depends_on:
+      - redis
+      - api-gateway
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: backend/services/api_gateway/Dockerfile
+    env_file: .env
+    depends_on:
+      - task-service
+    ports:
+      - "${API_GATEWAY_PORT:-8123}:8000"
+
+  admin:
+    build:
+      context: .
+      dockerfile: frontend/admin/Dockerfile
+    env_file: .env
+    depends_on:
+      - api-gateway
+    ports:
+      - "${ADMIN_PORT:-5130}:80"
+
+  pwa:
+    build:
+      context: .
+      dockerfile: frontend/pwa/Dockerfile
+    env_file: .env
+    depends_on:
+      - api-gateway
+    ports:
+      - "${PWA_PORT:-5131}:80"
+
+  tv:
+    build:
+      context: .
+      dockerfile: frontend/tv/Dockerfile
+    env_file: .env
+    depends_on:
+      - api-gateway
+    ports:
+      - "${TV_PORT:-5132}:80"
+
+volumes:
+  db_data:
