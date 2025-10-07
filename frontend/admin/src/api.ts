@@ -42,4 +42,33 @@ export async function getSchedulerSuggestion(trebovanjeId: string) {
   return response.data;
 }
 
+// KPI API functions
+export async function getDailyStats(filters?: { radnja?: string; period?: string; radnik?: string }) {
+  await ensureAuth();
+  const response = await client.get("/kpi/daily-stats", { params: filters });
+  return response.data;
+}
+
+export async function getTopWorkers(filters?: { radnja?: string; period?: string }) {
+  await ensureAuth();
+  const response = await client.get("/kpi/top-workers", { params: filters });
+  return response.data;
+}
+
+export async function getManualCompletion(filters?: { radnja?: string; period?: string }) {
+  await ensureAuth();
+  const response = await client.get("/kpi/manual-completion", { params: filters });
+  return response.data;
+}
+
+// CSV Export
+export async function exportCSV(filters?: { radnja?: string; period?: string; radnik?: string }) {
+  await ensureAuth();
+  const response = await client.get("/reports/export", { 
+    params: filters,
+    responseType: 'blob'
+  });
+  return response.data;
+}
+
 export default client;

@@ -6,6 +6,7 @@ import TrebovanjaPage from "./TrebovanjaPage";
 import SchedulerPage from "./SchedulerPage";
 import CatalogPage from "./CatalogPage";
 import ImportPage from "./ImportPage";
+import AnalyticsPage from "./AnalyticsPage";
 import { ensureAuth } from "../api";
 
 const { Header, Content } = Layout;
@@ -33,6 +34,10 @@ const AdminLayout = () => {
     {
       key: "/import",
       label: <Link to="/import">Uvoz</Link>
+    },
+    {
+      key: "/analytics",
+      label: <Link to="/analytics">Analitika</Link>
     }
   ];
 
@@ -82,6 +87,7 @@ const App = () => {
         <Route path="scheduler" element={<SchedulerPage />} />
         <Route path="catalog" element={<CatalogPage />} />
         <Route path="import" element={<ImportPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
       </Route>
     </Routes>
   );
