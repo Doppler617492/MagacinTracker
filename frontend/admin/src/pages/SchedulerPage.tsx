@@ -14,8 +14,9 @@ import {
   Divider
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import client, { getSchedulerSuggestion } from "../api";
+import client, { getSchedulerSuggestion, cancelSchedulerSuggestion } from "../api";
 
 const { Title, Text } = Typography;
 
@@ -73,20 +74,7 @@ const statusColor: Record<string, string> = {
   failed: "red"
 };
 
-const MAGACIONERI = [
-  {
-    value: "33333333-3333-3333-3333-333333333333",
-    label: "Luka Magacioner"
-  },
-  {
-    value: "44444444-4444-4444-4444-444444444444",
-    label: "Miloš Magacioner"
-  },
-  {
-    value: "55555555-5555-5555-5555-555555555555",
-    label: "Jelena Magacioner"
-  }
-];
+// MAGACIONERI will be fetched dynamically from API
 
 const PRIORITIES = [
   { value: "low", label: "Nizak" },
@@ -96,6 +84,11 @@ const PRIORITIES = [
 
 const fetchTrebovanja = async (): Promise<TrebovanjeListResponse> => {
   const response = await client.get("/trebovanja");
+  return response.data;
+};
+
+const fetchTrebovanjeDetail = async (id: string) => {
+  const response = await client.get(`/trebovanja/${id}`);
   return response.data;
 };
 
@@ -110,6 +103,35 @@ const SchedulerPage = () => {
     queryKey: ["trebovanja"],
     queryFn: fetchTrebovanja
   });
+
+  // Fetch selected trebovanje details
+  const { data: trebovanjeDetail, isFetching: isLoadingDetail } = useQuery({
+    queryKey: ["trebovanje", selectedTrebovanjeId],
+    queryFn: () => fetchTrebovanjeDetail(selectedTrebovanjeId!),
+    enabled: !!selectedTrebovanjeId
+  });
+
+  // Fetch magacioneri dynamically
+  const { data: usersData } = useQuery({
+    queryKey: ["users", "magacioner"],
+    queryFn: async () => {
+      const response = await client.get("/admin/users?role_filter=magacioner&active_filter=true&per_page=100");
+      console.log("🔍 Scheduler Page - Fetched users:", response.data);
+      return response.data;
+    },
+    staleTime: 0, // Always refetch
+    gcTime: 0 // Don't cache
+  });
+
+  const MAGACIONERI = useMemo(() => {
+    if (!usersData?.users) return [];
+    const result = usersData.users.map((user: any) => ({
+      value: user.id,
+      label: `${user.first_name} ${user.last_name}`
+    }));
+    console.log("🔍 Scheduler Page - MAGACIONERI list:", result);
+    return result;
+  }, [usersData]);
 
   const suggestionMutation = useMutation({
     mutationFn: getSchedulerSuggestion,
@@ -139,13 +161,44 @@ const SchedulerPage = () => {
     }
   });
 
+  const cancelSuggestionMutation = useMutation({
+    mutationFn: cancelSchedulerSuggestion,
+    onSuccess: () => {
+      message.success("Zadužnica poništena");
+      setSuggestion(null);
+      setOverrideMode(false);
+      queryClient.invalidateQueries({ queryKey: ["trebovanja"] });
+    },
+    onError: (error: any) => {
+      message.error(error?.response?.data?.detail ?? "Greška prilikom poništavanja zadužnice");
+    }
+  });
+
   const handleGetSuggestion = async () => {
     if (!selectedTrebovanjeId) return;
     await suggestionMutation.mutateAsync(selectedTrebovanjeId);
   };
 
+  const handleCancelSuggestion = async () => {
+    if (!selectedTrebovanjeId) return;
+    await cancelSuggestionMutation.mutateAsync(selectedTrebovanjeId);
+  };
+
   const handleAcceptSuggestion = async () => {
-    if (!suggestion || !selectedTrebovanjeId) return;
+    if (!suggestion || !selectedTrebovanjeId || !trebovanjeDetail) return;
+
+    // Collect all items with remaining quantity
+    const items = trebovanjeDetail.stavke
+      .filter((item: any) => item.kolicina_trazena > item.kolicina_uradjena)
+      .map((item: any) => ({
+        trebovanje_stavka_id: item.id,
+        quantity: item.kolicina_trazena - item.kolicina_uradjena
+      }));
+
+    if (items.length === 0) {
+      message.error("Nema preostalih stavki za dodjelu");
+      return;
+    }
 
     const payload: ZaduznicaCreatePayload = {
       trebovanje_id: selectedTrebovanjeId,
@@ -154,7 +207,7 @@ const SchedulerPage = () => {
           magacioner_id: suggestion.magacioner_id,
           priority: "normal",
           due_at: null,
-          items: [] // Scheduler will handle item assignment
+          items
         }
       ]
     };
@@ -163,7 +216,40 @@ const SchedulerPage = () => {
   };
 
   const handleOverrideAssignment = async (values: any) => {
-    if (!selectedTrebovanjeId) return;
+    if (!selectedTrebovanjeId || !trebovanjeDetail) return;
+
+    // Collect all items with remaining quantity
+    const items = trebovanjeDetail.stavke
+      .filter((item: any) => item.kolicina_trazena > item.kolicina_uradjena)
+      .map((item: any) => ({
+        trebovanje_stavka_id: item.id,
+        quantity: item.kolicina_trazena - item.kolicina_uradjena
+      }));
+
+    if (items.length === 0) {
+      message.error("Nema preostalih stavki za dodjelu");
+      return;
+    }
+
+    const dueAtValue = values.dueAt;
+    let dueAtIso: string | null = null;
+
+    if (dueAtValue) {
+      if (typeof dueAtValue === "string") {
+        const durationHours: Record<string, number> = {
+          "1h": 1,
+          "2h": 2,
+          "4h": 4,
+          "8h": 8
+        };
+        const hours = durationHours[dueAtValue];
+        dueAtIso = hours ? dayjs().add(hours, "hour").toISOString() : null;
+      } else if (dayjs.isDayjs(dueAtValue)) {
+        dueAtIso = dueAtValue.toISOString();
+      } else if (dueAtValue instanceof Date) {
+        dueAtIso = dueAtValue.toISOString();
+      }
+    }
 
     const payload: ZaduznicaCreatePayload = {
       trebovanje_id: selectedTrebovanjeId,
@@ -171,8 +257,8 @@ const SchedulerPage = () => {
         {
           magacioner_id: values.magacionerId,
           priority: values.priority,
-          due_at: values.dueAt ? values.dueAt.toISOString() : null,
-          items: [] // Manual override - items will be assigned by admin
+          due_at: dueAtIso,
+          items
         }
       ]
     };
@@ -272,6 +358,14 @@ const SchedulerPage = () => {
               <Button onClick={() => setOverrideMode(true)}>
                 Ručno dodeli
               </Button>
+              <Button
+                danger
+                onClick={handleCancelSuggestion}
+                loading={cancelSuggestionMutation.isPending}
+                disabled={!selectedTrebovanjeId}
+              >
+                Poništi zadužnicu
+              </Button>
             </Space>
           )}
 
@@ -310,7 +404,20 @@ const SchedulerPage = () => {
                   <Button onClick={() => setOverrideMode(true)}>
                     Prepiši ručno
                   </Button>
-                  <Button onClick={() => setSuggestion(null)}>
+                  <Button
+                    danger
+                    onClick={handleCancelSuggestion}
+                    loading={cancelSuggestionMutation.isPending}
+                  >
+                    Poništi zadužnicu
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      await handleCancelSuggestion();
+                      await handleGetSuggestion();
+                    }}
+                    loading={suggestionMutation.isPending || cancelSuggestionMutation.isPending}
+                  >
                     Novi predlog
                   </Button>
                 </Space>

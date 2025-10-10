@@ -36,13 +36,16 @@ async def get_user_context(
             try:
                 roles.add(Role(value))
             except ValueError:
-                continue
+                try:
+                    roles.add(Role(value.upper()))
+                except ValueError:
+                    continue
 
     return UserContext(id=user_id, roles=roles)
 
 
-def require_roles(*allowed: Iterable[Role]) -> Callable[[UserContext], UserContext]:
-    allowed_set = {Role(role) if not isinstance(role, Role) else role for role in allowed}
+def require_roles(allowed: list[str]) -> Callable[[UserContext], UserContext]:
+    allowed_set = set(allowed)
 
     async def dependency(context: UserContext = Depends(get_user_context)) -> UserContext:
         if allowed_set and context.roles.isdisjoint(allowed_set):

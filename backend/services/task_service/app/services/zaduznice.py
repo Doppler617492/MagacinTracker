@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -17,13 +17,11 @@ from ..models import (
     Trebovanje,
     TrebovanjeStavka,
     UserAccount,
-    UserRole,
     Zaduznica,
     ZaduznicaStavka,
 )
 from ..models.enums import (
     AuditAction,
-    Role,
     ScanResult,
     TrebovanjeItemStatus,
     TrebovanjeStatus,
@@ -53,9 +51,11 @@ def _to_decimal(value: float | Decimal | int) -> Decimal:
 
 async def _validate_magacioner(session: AsyncSession, user_id: UUID) -> None:
     result = await session.execute(
-        select(UserAccount.id)
-        .join(UserRole, UserRole.user_id == UserAccount.id)
-        .where(UserAccount.id == user_id, UserRole.role == Role.magacioner)
+        select(UserAccount.id).where(
+            UserAccount.id == user_id,
+            func.lower(cast(UserAccount.role, String)) == "magacioner",
+            UserAccount.is_active.is_(True),
+        )
     )
     if result.scalar_one_or_none() is None:
         raise ValueError("Magacioner not found or missing role")
@@ -160,6 +160,59 @@ async def create_zaduznice(
         {"type": "assign", "trebovanje_id": str(trebovanje.id), "zaduznice": [str(z) for z in created_ids]},
     )
     return created_ids
+
+
+async def cancel_trebovanje_assignments(
+    session: AsyncSession,
+    trebovanje_id: UUID,
+    *,
+    actor_id: UUID | None,
+) -> None:
+    result = await session.execute(
+        select(Zaduznica)
+        .options(joinedload(Zaduznica.stavke))
+        .where(Zaduznica.trebovanje_id == trebovanje_id)
+    )
+    zaduznice = list(result.scalars().unique())
+    if not zaduznice:
+        return
+
+    for zaduznica in zaduznice:
+        for stavka in zaduznica.stavke:
+            if stavka.obradjena_kolicina and float(stavka.obradjena_kolicina) > 0:
+                raise ValueError("Zadužnica je već u obradi i ne može se poništiti")
+
+    trebovanje = await session.get(Trebovanje, trebovanje_id)
+    if not trebovanje:
+        raise ValueError("Trebovanje ne postoji")
+
+    stavka_ids = {stavka.trebovanje_stavka_id for zaduznica in zaduznice for stavka in zaduznica.stavke}
+    if stavka_ids:
+        result = await session.execute(select(TrebovanjeStavka).where(TrebovanjeStavka.id.in_(stavka_ids)))
+        for stavka in result.scalars():
+            stavka.kolicina_uradjena = 0
+            stavka.status = TrebovanjeItemStatus.new
+
+    canceled_ids = [str(zaduznica.id) for zaduznica in zaduznice]
+    for zaduznica in zaduznice:
+        await record_audit(
+            session,
+            action=AuditAction.scheduler_override,
+            actor_id=actor_id,
+            entity_type="zaduznica",
+            entity_id=str(zaduznica.id),
+            payload={"action": "cancel"},
+        )
+        await session.delete(zaduznica)
+
+    trebovanje.status = TrebovanjeStatus.new
+    trebovanje.updated_at = datetime.utcnow()
+
+    await session.commit()
+    await publish(
+        TV_CHANNEL,
+        {"type": "cancel", "trebovanje_id": str(trebovanje_id), "zaduznice": canceled_ids},
+    )
 
 
 async def update_zaduznica_status(
@@ -420,7 +473,7 @@ async def worker_task_detail(session: AsyncSession, zaduznica_id: UUID, user_id:
     zaduznica = await session.scalar(
         select(Zaduznica)
         .options(
-            joinedload(Zaduznica.stavke).joinedload(ZaduznicaStavka.trebovanje_stavka),
+            joinedload(Zaduznica.stavke),
             joinedload(Zaduznica.trebovanje).joinedload(Trebovanje.radnja),
         )
         .where(Zaduznica.id == zaduznica_id, Zaduznica.magacioner_id == user_id)
@@ -428,14 +481,24 @@ async def worker_task_detail(session: AsyncSession, zaduznica_id: UUID, user_id:
     if not zaduznica:
         raise ValueError("Zadužnica nije pronađena")
 
+    # Get trebovanje stavke data for the items
+    trebovanje_stavke_ids = [item.trebovanje_stavka_id for item in zaduznica.stavke]
+    trebovanje_stavke = {}
+    if trebovanje_stavke_ids:
+        trebovanje_stavke_result = await session.execute(
+            select(TrebovanjeStavka).where(TrebovanjeStavka.id.in_(trebovanje_stavke_ids))
+        )
+        for ts in trebovanje_stavke_result.scalars():
+            trebovanje_stavke[ts.id] = ts
+
     items = [
         WorkerTaskItem(
             id=item.id,
-            naziv=item.trebovanje_stavka.naziv if item.trebovanje_stavka else "",
+            naziv=trebovanje_stavke.get(item.trebovanje_stavka_id, TrebovanjeStavka()).naziv if trebovanje_stavke.get(item.trebovanje_stavka_id) else "",
             trazena_kolicina=float(item.trazena_kolicina),
             obradjena_kolicina=float(item.obradjena_kolicina),
             status=item.status.value,
-            needs_barcode=item.trebovanje_stavka.needs_barcode if item.trebovanje_stavka else False,
+            needs_barcode=trebovanje_stavke.get(item.trebovanje_stavka_id, TrebovanjeStavka()).needs_barcode if trebovanje_stavke.get(item.trebovanje_stavka_id) else False,
         )
         for item in zaduznica.stavke
     ]
@@ -469,7 +532,7 @@ async def zaduznica_detail(session: AsyncSession, zaduznica_id: UUID) -> Zaduzni
     zaduznica = await session.scalar(
         select(Zaduznica)
         .options(
-            joinedload(Zaduznica.stavke).joinedload(ZaduznicaStavka.trebovanje_stavka),
+            joinedload(Zaduznica.stavke),
             joinedload(Zaduznica.trebovanje).joinedload(Trebovanje.magacin),
             joinedload(Zaduznica.trebovanje).joinedload(Trebovanje.radnja),
         )

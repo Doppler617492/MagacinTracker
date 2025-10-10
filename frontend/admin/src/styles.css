@@ -7,3 +7,14 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Force icons to display in horizontal menu */
+.ant-menu-horizontal .ant-menu-item-icon {
+  display: inline-block !important;
+  margin-right: 8px;
+}
+
+.ant-menu-horizontal .anticon {
+  display: inline-block !important;
+  margin-right: 8px;
+}

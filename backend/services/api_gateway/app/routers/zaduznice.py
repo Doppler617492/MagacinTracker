@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from ..dependencies import build_forward_headers, get_task_client
 from ..services.auth import get_current_user
@@ -26,6 +26,26 @@ async def create_zaduznice(
     if response.status_code not in (200, 201):
         raise HTTPException(status_code=response.status_code, detail=response.text)
     return response.json()
+
+
+@router.post(
+    "/zaduznice/predlog/{trebovanje_id}/cancel",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+async def cancel_scheduler_suggestion(
+    trebovanje_id: UUID,
+    request: Request,
+    user: dict = Depends(get_current_user),
+    client: httpx.AsyncClient = Depends(get_task_client),
+) -> Response:
+    response = await client.post(
+        f"/api/zaduznice/predlog/{trebovanje_id}/cancel",
+        headers=build_forward_headers(request, user),
+    )
+    if response.status_code not in (200, 204):
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+    return Response(status_code=response.status_code)
 
 
 @router.patch("/zaduznice/{zaduznica_id}/status", status_code=status.HTTP_200_OK)

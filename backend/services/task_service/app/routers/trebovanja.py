@@ -48,7 +48,7 @@ async def get_trebovanje(trebovanje_id: UUID, db=Depends(get_db)) -> TrebovanjeD
 @router.post("/trebovanja/import", response_model=TrebovanjeDetail, status_code=status.HTTP_201_CREATED)
 async def import_trebovanje(
     payload: TrebovanjeImportPayload,
-    user: UserContext = Depends(require_roles(Role.komercijalista, Role.sef)),
+    user: UserContext = Depends(require_roles([Role.KOMERCIJALISTA, Role.SEF])),
     db=Depends(get_db),
 ) -> TrebovanjeDetail:
     repo = TrebovanjeRepository(db)

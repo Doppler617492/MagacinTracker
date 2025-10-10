@@ -3,12 +3,12 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, Numeric, String
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-from .enums import TrebovanjeItemStatus, TrebovanjeStatus
+from .enums import DiscrepancyStatus, TrebovanjeItemStatus, TrebovanjeStatus
 from .location import Magacin, Radnja
 
 
@@ -22,13 +22,16 @@ class Trebovanje(Base):
         Enum(TrebovanjeStatus, name="trebovanje_status"), default=TrebovanjeStatus.new
     )
     meta: Mapped[dict] = mapped_column(JSONB, default=dict)
-    created_by_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("user_account.id"))
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
     )
+    allow_incomplete_close: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    closed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     magacin: Mapped["Magacin"] = relationship("Magacin")
     radnja: Mapped["Radnja"] = relationship("Radnja")
@@ -38,6 +41,7 @@ class Trebovanje(Base):
 
 
 class TrebovanjeStavka(Base):
+    __tablename__ = "trebovanje_stavka"
     __table_args__ = (
         CheckConstraint("kolicina_trazena > 0", name="kolicina_trazena_gt_zero"),
         CheckConstraint(
@@ -46,15 +50,28 @@ class TrebovanjeStavka(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    trebovanje_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("trebovanje.id", ondelete="CASCADE"))
+    trebovanje_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("trebovanje.id", ondelete="CASCADE")
+    )
     artikal_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("artikal.id"))
     artikl_sifra: Mapped[str] = mapped_column(String(64))
     naziv: Mapped[str] = mapped_column(String(255))
     kolicina_trazena: Mapped[float] = mapped_column(Numeric(12, 3))
     kolicina_uradjena: Mapped[float] = mapped_column(Numeric(12, 3), default=0)
+    barkod: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[TrebovanjeItemStatus] = mapped_column(
         Enum(TrebovanjeItemStatus, name="trebovanje_stavka_status"), default=TrebovanjeItemStatus.new
     )
     needs_barcode: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    
+    # Shortage tracking fields
+    picked_qty: Mapped[float] = mapped_column(Numeric(12, 3), default=0, nullable=False)
+    missing_qty: Mapped[float] = mapped_column(Numeric(12, 3), default=0, nullable=False)
+    discrepancy_status: Mapped[DiscrepancyStatus] = mapped_column(
+        Enum(DiscrepancyStatus, name="discrepancy_status_enum"), default=DiscrepancyStatus.none, nullable=False
+    )
+    discrepancy_reason: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    last_scanned_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     trebovanje: Mapped[Trebovanje] = relationship(back_populates="stavke")
+    # zaduznica_stavke: Mapped[list["ZaduznicaStavka"]] = relationship("ZaduznicaStavka", back_populates="trebovanje_stavka")

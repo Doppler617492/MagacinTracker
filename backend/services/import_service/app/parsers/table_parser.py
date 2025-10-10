@@ -14,9 +14,9 @@ COLUMN_ALIASES = {
     "datum": ["datum"],
     "magacin": ["izvor", "magacin", "magacin naziv"],
     "radnja": ["odredište", "radnja", "lokacija"],
-    "artikl_sifra": ["šifra artikla", "sifra artikla", "šifra", "sifra"],
-    "naziv": ["naziv artikla", "naziv"],
-    "kolicina": ["količina", "kolicina", "kolicina trazena"],
+    "artikl_sifra": ["šifra artikla", "sifra artikla", "šifra", "sifra", "Šifra", "Šifra artikla"],
+    "naziv": ["naziv artikla", "naziv", "Naziv"],
+    "kolicina": ["količina", "kolicina", "kolicina trazena", "Količina"],
     "barkod": ["barkod", "barcode"],
 }
 

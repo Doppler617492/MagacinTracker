@@ -16,7 +16,7 @@ class Zaduznica(Base):
     trebovanje_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("trebovanje.id", ondelete="CASCADE"), index=True
     )
-    magacioner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user_account.id"))
+    magacioner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     prioritet: Mapped[TaskPriority] = mapped_column(
         Enum(TaskPriority, name="task_priority"), default=TaskPriority.normal
     )
@@ -40,6 +40,7 @@ class Zaduznica(Base):
 
 
 class ZaduznicaStavka(Base):
+    __tablename__ = "zaduznica_stavka"
     __table_args__ = (
         CheckConstraint("trazena_kolicina > 0", name="trazena_kolicina_gt_zero"),
         CheckConstraint(
@@ -61,4 +62,4 @@ class ZaduznicaStavka(Base):
     )
 
     zaduznica: Mapped[Zaduznica] = relationship(back_populates="stavke")
-    # trebovanje_stavka: Mapped["TrebovanjeStavka"] = relationship("TrebovanjeStavka")
+    # trebovanje_stavka: Mapped["TrebovanjeStavka"] = relationship("TrebovanjeStavka", back_populates="zaduznica_stavke")

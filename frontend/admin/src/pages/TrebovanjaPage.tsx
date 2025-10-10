@@ -87,20 +87,7 @@ const statusColor: Record<string, string> = {
   failed: "red"
 };
 
-const MAGACIONERI = [
-  {
-    value: "33333333-3333-3333-3333-333333333333",
-    label: "Luka Magacioner"
-  },
-  {
-    value: "44444444-4444-4444-4444-444444444444",
-    label: "Miloš Magacioner"
-  },
-  {
-    value: "55555555-5555-5555-5555-555555555555",
-    label: "Jelena Magacioner"
-  }
-];
+// MAGACIONERI will be fetched dynamically from API
 
 const PRIORITIES = [
   { value: "low", label: "Nizak" },
@@ -129,6 +116,28 @@ const TrebovanjaPage = () => {
     queryKey: ["trebovanja"],
     queryFn: fetchTrebovanja
   });
+
+  // Fetch magacioneri dynamically
+  const { data: usersData } = useQuery({
+    queryKey: ["users", "magacioner"],
+    queryFn: async () => {
+      const response = await client.get("/admin/users?role_filter=magacioner&active_filter=true&per_page=100");
+      console.log("🔍 Trebovanja Page - Fetched users:", response.data);
+      return response.data;
+    },
+    staleTime: 0, // Always refetch
+    gcTime: 0 // Don't cache
+  });
+
+  const MAGACIONERI = useMemo(() => {
+    if (!usersData?.users) return [];
+    const result = usersData.users.map((user: any) => ({
+      value: user.id,
+      label: `${user.first_name} ${user.last_name}`
+    }));
+    console.log("🔍 Trebovanja Page - MAGACIONERI list:", result);
+    return result;
+  }, [usersData]);
 
   const { data: detail, isFetching: isDetailLoading } = useQuery(
     {

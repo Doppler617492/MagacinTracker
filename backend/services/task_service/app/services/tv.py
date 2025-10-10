@@ -28,7 +28,8 @@ async def build_tv_snapshot(session: AsyncSession) -> TvSnapshot:
     leaderboard_stmt = (
         sa.select(
             UserAccount.id.label("user_id"),
-            UserAccount.full_name.label("full_name"),
+            UserAccount.first_name.label("first_name"),
+            UserAccount.last_name.label("last_name"),
             sa.func.coalesce(sa.func.sum(ScanLog.quantity), 0).label("qty"),
             sa.func.sum(sa.case((Zaduznica.status == ZaduznicaStatus.done, 1), else_=0)).label("tasks_done"),
             sa.func.count(Zaduznica.id).label("tasks_total"),
@@ -44,7 +45,7 @@ async def build_tv_snapshot(session: AsyncSession) -> TvSnapshot:
             ),
         )
         .where(Zaduznica.created_at >= start_of_day)
-        .group_by(UserAccount.id, UserAccount.full_name)
+        .group_by(UserAccount.id, UserAccount.first_name, UserAccount.last_name)
         .order_by(sa.desc("qty"))
         .limit(10)
     )
@@ -57,10 +58,11 @@ async def build_tv_snapshot(session: AsyncSession) -> TvSnapshot:
         completed = _to_float(row.tasks_done)
         completion = (completed / total_tasks * 100) if total_tasks else 0.0
         speed = _to_float(row.qty) / hours_since_start
+        full_name = f"{row.first_name} {row.last_name}"
         leaderboard.append(
             LeaderboardEntry(
                 user_id=str(row.user_id),
-                display_name=row.full_name,
+                display_name=full_name,
                 items_completed=int(row.qty or 0),
                 task_completion=completion,
                 speed_per_hour=speed,

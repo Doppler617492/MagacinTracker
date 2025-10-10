@@ -29,6 +29,9 @@ services:
       - redis
     ports:
       - "8001:8001"
+    networks:
+      - default
+      - monitoring
 
   import-service:
     build:
@@ -43,6 +46,9 @@ services:
       - ./imports:${IMPORT_WATCH_PATH:-/imports}
     ports:
       - "8003:8003"
+    networks:
+      - default
+      - monitoring
 
   realtime-worker:
     build:
@@ -52,6 +58,11 @@ services:
     depends_on:
       - redis
       - api-gateway
+    ports:
+      - "8004:8004"
+    networks:
+      - default
+      - monitoring
 
   api-gateway:
     build:
@@ -62,6 +73,9 @@ services:
       - task-service
     ports:
       - "${API_GATEWAY_PORT:-8123}:8000"
+    networks:
+      - default
+      - monitoring
 
   admin:
     build:
@@ -95,3 +109,7 @@ services:
 
 volumes:
   db_data:
+
+networks:
+  monitoring:
+    external: true

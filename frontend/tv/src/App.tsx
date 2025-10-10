@@ -6,6 +6,24 @@ import client, { ensureAuth } from "./api";
 import PrivacyToggle from "./components/PrivacyToggle";
 import MilestoneAnimation from "./components/MilestoneAnimation";
 
+interface ForecastData {
+  metric: string;
+  horizon: number;
+  confidence: number;
+  anomaly_detected: boolean;
+  anomalies: number[];
+  trend: number;
+  summary: {
+    current_value: number;
+    forecast_avg: number;
+    trend_direction: string;
+    trend_strength: number;
+    confidence_score: number;
+    anomaly_count: number;
+  };
+  generated_at: string;
+}
+
 interface LeaderboardEntry {
   user_id: string;
   display_name: string;
@@ -48,11 +66,40 @@ const fetchSnapshot = async (): Promise<TvSnapshot> => {
   return data;
 };
 
+const fetchForecast = async (): Promise<ForecastData> => {
+  const { data } = await client.get("/kpi/predict", {
+    params: {
+      metric: "items_completed",
+      period: 30,
+      horizon: 7
+    }
+  });
+  return data;
+};
+
+const fetchAIRecommendations = async (): Promise<any[]> => {
+  const { data } = await client.post("/ai/recommendations");
+  return data;
+};
+
 const App = () => {
   const [ready, setReady] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [previousKpi, setPreviousKpi] = useState<KpiSnapshot | null>(null);
   const { data, refetch } = useQuery({ queryKey: ["tv", "snapshot"], queryFn: fetchSnapshot, enabled: ready });
+  const { data: forecastData } = useQuery({ 
+    queryKey: ["tv", "forecast"], 
+    queryFn: fetchForecast, 
+    enabled: ready,
+    refetchInterval: 5 * 60 * 1000 // Refresh every 5 minutes
+  });
+
+  const { data: aiRecommendations = [] } = useQuery({ 
+    queryKey: ["tv", "ai-recommendations"], 
+    queryFn: fetchAIRecommendations, 
+    enabled: ready,
+    refetchInterval: 2 * 60 * 1000 // Refresh every 2 minutes
+  });
 
   useEffect(() => {
     ensureAuth()
@@ -111,6 +158,38 @@ const App = () => {
 
   return (
     <div className="tv-root">
+      {/* Anomaly Warning Overlay */}
+      {forecastData?.anomaly_detected && (
+        <motion.div
+          className="anomaly-overlay"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'linear-gradient(135deg, #ff4d4f, #ff7875)',
+            color: 'white',
+            padding: '16px 24px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(255, 77, 79, 0.3)',
+            zIndex: 1000,
+            textAlign: 'center',
+            minWidth: '400px'
+          }}
+        >
+          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+            ⚠️ Upozorenje: Produktivnost opada!
+          </div>
+          <div style={{ fontSize: '14px', opacity: 0.9 }}>
+            Sistem je detektovao anomaliju u performansama. 
+            Očekivano: {Math.round(forecastData.summary.forecast_avg)} stavki/dan
+          </div>
+        </motion.div>
+      )}
+
       <div className="tv-controls">
         <div className="brand-header">
           <div className="brand-logo">📦</div>
@@ -131,6 +210,16 @@ const App = () => {
             label="Ukupno zadataka"
             icon="📋"
           />
+          {forecastData && (
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#666', 
+              marginTop: '4px',
+              opacity: 0.8
+            }}>
+              🔮 Prognoza: {Math.round(forecastData.summary.forecast_avg)}/dan
+            </div>
+          )}
         </div>
         <div className="metric">
           <MilestoneAnimation
@@ -155,6 +244,44 @@ const App = () => {
           <span className="metric-value">{Math.round(kpi.shift_ends_in_minutes)} min</span>
         </div>
       </header>
+
+      {/* Load Balance Monitor */}
+      {aiRecommendations.length > 0 && (
+        <motion.div
+          className="load-balance-monitor"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: 'linear-gradient(135deg, #1890ff, #40a9ff)',
+            color: 'white',
+            padding: '16px 24px',
+            margin: '0 24px 24px 24px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+          whileHover={{ scale: 1.02 }}
+          onClick={() => {
+            // In a real implementation, this would open the AI recommendations page
+            console.log('AI recommendations clicked');
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+                ⚙️ AI predlaže preraspodjelu zadataka
+              </div>
+              <div style={{ fontSize: '14px', opacity: 0.9 }}>
+                {aiRecommendations.length} preporuka za optimizaciju opterećenja
+              </div>
+            </div>
+            <div style={{ fontSize: '24px' }}>
+              🤖
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <main className="tv-content">
         <section className="leaderboard">

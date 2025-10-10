@@ -10,5 +10,6 @@ RUN npm run build --workspace pwa
 
 FROM nginx:1.25-alpine
 COPY --from=build /app/pwa/dist /usr/share/nginx/html
+COPY frontend/pwa/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

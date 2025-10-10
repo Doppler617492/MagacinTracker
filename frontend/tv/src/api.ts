@@ -8,8 +8,8 @@ let token: string | null = null;
 let bootstrapPromise: Promise<string> | null = null;
 
 const TV_CREDENTIALS = {
-  username: "vanja.menadzer@example.com",
-  password: "Magacin123!"
+  username: "it@cungu.com",
+  password: "Dekodera1989"
 };
 
 async function obtainToken(): Promise<string> {

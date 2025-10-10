@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, status
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app_common.logging import configure_logging, get_logger
 
@@ -13,6 +14,8 @@ logger = get_logger(__name__)
 
 app = FastAPI(title="Magacin Import Service", version="0.1.0")
 processor = ImportProcessor()
+
+Instrumentator().instrument(app).expose(app, include_in_schema=False)
 
 
 @app.post("/api/import/manual", status_code=status.HTTP_202_ACCEPTED)

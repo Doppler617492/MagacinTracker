@@ -8,15 +8,14 @@ from typing import Optional
 
 import redis.asyncio as aioredis
 from prometheus_client import Histogram
-from sqlalchemy import Select, case, func, select
+from sqlalchemy import Select, case, func, select, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_common.cache import get_redis
 
-from ..models import SchedulerLog, Trebovanje, UserAccount, UserRole, Zaduznica, ZaduznicaStavka
+from ..models import SchedulerLog, Trebovanje, UserAccount, Zaduznica, ZaduznicaStavka
 from ..models.enums import (
     AuditAction,
-    Role,
     SchedulerLogStatus,
     TrebovanjeStatus,
     ZaduznicaItemStatus,
@@ -95,7 +94,7 @@ class SchedulerService:
             raise ValueError("No available workers")
 
         best = min(candidates, key=lambda c: c.score)
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         log_entry = SchedulerLog(
             id=uuid.uuid4(),
             trebovanje_id=trebovanje_id,
@@ -132,6 +131,29 @@ class SchedulerService:
         await self.session.refresh(log_entry)
         return log_entry, False
 
+    async def cancel_suggestion(self, trebovanje_id: uuid.UUID, actor_id: Optional[uuid.UUID] = None) -> None:
+        lock_id = await self.lock_manager.get_lock(trebovanje_id)
+        if not lock_id:
+            return
+
+        log_entry = await self.session.get(SchedulerLog, lock_id)
+        now = datetime.utcnow()
+
+        if log_entry:
+            log_entry.status = SchedulerLogStatus.override
+            log_entry.lock_expires_at = now
+            await record_audit(
+                self.session,
+                action=AuditAction.scheduler_override,
+                actor_id=actor_id,
+                entity_type="trebovanje",
+                entity_id=str(trebovanje_id),
+                payload={"log_id": str(log_entry.id), "action": "cancel"},
+            )
+
+        await self.lock_manager.release_lock(trebovanje_id)
+        await self.session.commit()
+
     async def _load_candidates(self) -> list[SchedulerCandidate]:
         subquery: Select = (
             select(
@@ -156,13 +178,13 @@ class SchedulerService:
         query = (
             select(
                 UserAccount.id,
-                UserAccount.full_name,
+                UserAccount.first_name,
+                UserAccount.last_name,
                 func.coalesce(subquery.c.active_tasks, 0),
                 func.coalesce(subquery.c.remaining_quantity, 0.0),
             )
-            .join(UserRole, UserRole.user_id == UserAccount.id)
             .outerjoin(subquery, subquery.c.magacioner_id == UserAccount.id)
-            .where(UserRole.role == Role.magacioner, UserAccount.is_active.is_(True))
+            .where(func.lower(cast(UserAccount.role, String)) == "magacioner", UserAccount.is_active.is_(True))
         )
 
         results = await self.session.execute(query)
@@ -171,9 +193,9 @@ class SchedulerService:
             candidates.append(
                 SchedulerCandidate(
                     user_id=row[0],
-                    full_name=row[1],
-                    active_tasks=int(row[2] or 0),
-                    remaining_quantity=float(row[3] or 0.0),
+                    full_name=f"{row[1]} {row[2]}",  # Construct full name from first_name and last_name
+                    active_tasks=int(row[3] or 0),
+                    remaining_quantity=float(row[4] or 0.0),
                 )
             )
         return candidates

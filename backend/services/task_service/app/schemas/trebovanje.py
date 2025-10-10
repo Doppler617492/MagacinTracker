@@ -56,7 +56,7 @@ class TrebovanjeListResponse(BaseModel):
 
 
 class TrebovanjeStavkaInput(BaseModel):
-    artikl_id: Optional[str] = None
+    artikl_id: Optional[UUID] = None
     artikl_sifra: str
     naziv: str
     kolicina_trazena: float = Field(gt=0)

@@ -13,14 +13,15 @@ import {
   Divider
 } from 'antd';
 import { 
-  LineChart, 
-  ColumnChart, 
-  PieChart 
+  Line, 
+  Column, 
+  Pie 
 } from '@ant-design/charts';
-import { DownloadOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined, ReloadOutlined, RobotOutlined, EyeOutlined, WarningOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { getDailyStats, getTopWorkers, getManualCompletion, exportCSV } from '../api';
+import { getDailyStats, getTopWorkers, getManualCompletion, exportCSV, getKPIForecast, ForecastData } from '../api';
+import AIAssistantModal from '../components/AIAssistantModal';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -37,6 +38,8 @@ const AnalyticsPage: React.FC = () => {
     period: '7d',
     dateRange: [dayjs().subtract(7, 'day'), dayjs()]
   });
+  const [aiModalVisible, setAiModalVisible] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
 
   // KPI Data Queries
   const { data: dailyStats, isLoading: dailyLoading, refetch: refetchDaily } = useQuery({
@@ -65,6 +68,22 @@ const AnalyticsPage: React.FC = () => {
       period: filters.period
     }),
     staleTime: 5 * 60 * 1000,
+  });
+
+  // Forecast Query
+  const { data: forecastData, isLoading: forecastLoading } = useQuery({
+    queryKey: ['forecast', filters, showForecast],
+    queryFn: () => getKPIForecast({
+      metric: 'items_completed',
+      period: filters.period === '1d' ? 7 : 
+              filters.period === '7d' ? 30 : 
+              filters.period === '30d' ? 90 : 90,
+      horizon: 7,
+      radnja_id: filters.radnja,
+      radnik_id: filters.radnik
+    }),
+    enabled: showForecast,
+    staleTime: 10 * 60 * 1000, // 10 minutes cache for forecasts
   });
 
   const handleFilterChange = (key: keyof Filters, value: any) => {
@@ -113,9 +132,42 @@ const AnalyticsPage: React.FC = () => {
     message.success('Podaci osveženi');
   };
 
+  const handleForecastToggle = () => {
+    setShowForecast(!showForecast);
+    if (!showForecast) {
+      message.info('🔮 Prognoza je uključena - prikazuju se predviđanja za narednih 7 dana');
+    }
+  };
+
+  // Prepare chart data with forecast
+  const prepareChartData = () => {
+    const baseData = dailyStats?.data || [];
+    
+    if (!showForecast || !forecastData) {
+      return baseData;
+    }
+    
+    // Combine actual and forecast data
+    const combinedData = [
+      ...baseData.map(item => ({
+        ...item,
+        type: 'actual'
+      })),
+      ...forecastData.forecast.map(item => ({
+        date: item.date,
+        value: item.value,
+        type: 'forecast',
+        lower_bound: item.lower_bound,
+        upper_bound: item.upper_bound
+      }))
+    ];
+    
+    return combinedData;
+  };
+
   // Chart configurations
   const lineConfig = {
-    data: dailyStats?.data || [],
+    data: prepareChartData(),
     xField: 'date',
     yField: 'value',
     seriesField: 'type',
@@ -126,7 +178,13 @@ const AnalyticsPage: React.FC = () => {
         duration: 1000,
       },
     },
-    color: ['#1890ff', '#52c41a', '#faad14'],
+    color: (type: string) => {
+      switch (type) {
+        case 'actual': return '#1890ff';
+        case 'forecast': return '#722ed1';
+        default: return '#1890ff';
+      }
+    },
     legend: {
       position: 'top' as const,
     },
@@ -139,6 +197,15 @@ const AnalyticsPage: React.FC = () => {
         formatter: (v: number) => `${v}`,
       },
     },
+    // Add confidence interval area for forecast
+    ...(showForecast && forecastData && {
+      area: {
+        style: {
+          fill: 'l(270) 0:#722ed1 1:#722ed1',
+          fillOpacity: 0.1,
+        },
+      },
+    }),
   };
 
   const columnConfig = {
@@ -275,10 +342,45 @@ const AnalyticsPage: React.FC = () => {
               >
                 Izvezi CSV
               </Button>
+              <Button 
+                type={showForecast ? "primary" : "default"}
+                icon={<EyeOutlined />} 
+                onClick={handleForecastToggle}
+                loading={forecastLoading}
+                style={showForecast ? {} : { borderColor: '#722ed1', color: '#722ed1' }}
+              >
+                🔮 Prikaži prognozu
+              </Button>
+              <Button 
+                type="default"
+                icon={<RobotOutlined />} 
+                onClick={() => setAiModalVisible(true)}
+                style={{ borderColor: '#1890ff', color: '#1890ff' }}
+              >
+                AI Asistent
+              </Button>
             </Space>
           </Col>
         </Row>
       </Card>
+
+      {/* Anomaly Warning */}
+      {showForecast && forecastData?.anomaly_detected && (
+        <Card style={{ marginBottom: '24px', borderColor: '#ff4d4f' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <WarningOutlined style={{ color: '#ff4d4f', fontSize: '20px' }} />
+            <div>
+              <div style={{ fontWeight: 500, color: '#ff4d4f' }}>
+                ⚠️ Upozorenje: Detektovane anomalije u performansama!
+              </div>
+              <div style={{ color: '#666', fontSize: '14px' }}>
+                Sistem je detektovao {forecastData.anomalies.length} anomalija u poslednjih {forecastData.horizon} dana. 
+                Preporučuje se provera operativnih procesa.
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* KPI Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
@@ -289,6 +391,11 @@ const AnalyticsPage: React.FC = () => {
               value={dailyStats?.summary?.total_items || 0}
               valueStyle={{ color: '#1890ff' }}
             />
+            {showForecast && forecastData && (
+              <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                🔮 Prognoza: {Math.round(forecastData.summary.forecast_avg)} stavki/dan
+              </div>
+            )}
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
@@ -318,6 +425,11 @@ const AnalyticsPage: React.FC = () => {
               value={topWorkers?.summary?.active_workers || 0}
               valueStyle={{ color: '#722ed1' }}
             />
+            {showForecast && forecastData && (
+              <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                Trend: {forecastData.summary.trend_direction}
+              </div>
+            )}
           </Card>
         </Col>
       </Row>
@@ -325,10 +437,22 @@ const AnalyticsPage: React.FC = () => {
       {/* Charts */}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={16}>
-          <Card title="Dnevni trend" loading={dailyLoading}>
+          <Card 
+            title={
+              <div>
+                Dnevni trend
+                {showForecast && forecastData && (
+                  <div style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>
+                    🔮 Prognoza za narednih {forecastData.horizon} dana (pouzdanost: {Math.round(forecastData.confidence * 100)}%)
+                  </div>
+                )}
+              </div>
+            } 
+            loading={dailyLoading || forecastLoading}
+          >
             <div style={{ height: '300px' }}>
               {dailyStats?.data?.length > 0 ? (
-                <LineChart {...lineConfig} />
+                <Line {...lineConfig} />
               ) : (
                 <div style={{ 
                   height: '100%', 
@@ -348,7 +472,7 @@ const AnalyticsPage: React.FC = () => {
           <Card title="Top 5 radnika" loading={workersLoading}>
             <div style={{ height: '300px' }}>
               {topWorkers?.data?.length > 0 ? (
-                <ColumnChart {...columnConfig} />
+                <Column {...columnConfig} />
               ) : (
                 <div style={{ 
                   height: '100%', 
@@ -370,7 +494,7 @@ const AnalyticsPage: React.FC = () => {
           <Card title="Ručne potvrde vs Skeniranje" loading={manualLoading}>
             <div style={{ height: '300px' }}>
               {manualCompletion?.data?.length > 0 ? (
-                <PieChart {...pieConfig} />
+                <Pie {...pieConfig} />
               ) : (
                 <div style={{ 
                   height: '100%', 
@@ -428,6 +552,17 @@ const AnalyticsPage: React.FC = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* AI Assistant Modal */}
+      <AIAssistantModal
+        visible={aiModalVisible}
+        onClose={() => setAiModalVisible(false)}
+        filters={{
+          radnja: filters.radnja,
+          period: filters.period,
+          radnik: filters.radnik
+        }}
+      />
     </div>
   );
 };

@@ -252,18 +252,40 @@ class CatalogService:
 
         return changed
 
-    async def lookup(self, sifra: str) -> CatalogLookupResponse:
+    async def lookup(self, code: str) -> CatalogLookupResponse:
+        """
+        Lookup article by SKU (sifra) or barcode.
+        
+        Args:
+            code: Either a SKU (sifra) or barcode value
+            
+        Returns:
+            CatalogLookupResponse with article details or None values if not found
+        """
+        # Try to find by SKU first
         stmt = (
             select(Artikal)
             .options(joinedload(Artikal.barkodovi))
-            .where(Artikal.sifra == sifra)
+            .where(Artikal.sifra == code)
         )
         result = await self.session.execute(stmt)
         artikal = result.scalar_one_or_none()
+        
+        # If not found by SKU, try by barcode
+        if not artikal:
+            stmt = (
+                select(Artikal)
+                .join(ArtikalBarkod)
+                .options(joinedload(Artikal.barkodovi))
+                .where(ArtikalBarkod.barkod == code)
+            )
+            result = await self.session.execute(stmt)
+            artikal = result.scalar_one_or_none()
+        
         if not artikal:
             return CatalogLookupResponse(
                 artikal_id=None,
-                sifra=sifra,
+                sifra=code,
                 naziv=None,
                 jedinica_mjere=None,
                 aktivan=False,
@@ -295,7 +317,7 @@ class CatalogService:
         total = await self.session.scalar(select(func.count()).select_from(stmt.subquery()))
         stmt = stmt.order_by(Artikal.sifra).limit(page_size).offset((page - 1) * page_size)
         rows = await self.session.execute(stmt)
-        artikli = rows.scalars().all()
+        artikli = rows.unique().scalars().all()
         return [CatalogArticleResponse.from_model(a) for a in artikli], int(total or 0)
 
     async def update_article(self, artikal_id: uuid.UUID, payload: CatalogArticleUpdate, actor_id: Optional[uuid.UUID]) -> CatalogArticleResponse:

@@ -16,7 +16,7 @@ class ScanLog(Base):
     zaduznica_stavka_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("zaduznica_stavka.id", ondelete="CASCADE"), index=True
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user_account.id"))
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     barcode: Mapped[str] = mapped_column(String(64))
     quantity: Mapped[float] = mapped_column(Numeric(12, 3), default=1)
     result: Mapped[ScanResult] = mapped_column(Enum(ScanResult, name="scan_result"))
@@ -30,7 +30,7 @@ class ManualOverride(Base):
     zaduznica_stavka_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("zaduznica_stavka.id", ondelete="CASCADE"), index=True
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user_account.id"))
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     reason: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

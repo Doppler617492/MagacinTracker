@@ -9,7 +9,8 @@ from app_common.logging import configure_logging, get_logger
 from app_common.middleware import CorrelationIdMiddleware
 
 from .config import settings
-from .routers import auth, catalog, health, import_router, trebovanja, tv, worker, zaduznice
+from .routers import ai, auth, catalog, edge, health, import_router, kafka, kpi, reports, trebovanja, tv, worker, zaduznice
+from .routers import user_management
 from .dependencies.http import create_http_clients
 
 configure_logging()
@@ -20,19 +21,32 @@ api = FastAPI(title="Magacin API Gateway", version="0.1.0")
 api.add_middleware(CorrelationIdMiddleware)
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins or ["*"],
-    allow_credentials=settings.cors_allow_credentials,
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://localhost:4173", 
+        "http://localhost:5130",
+        "http://localhost:5131",  # PWA
+        "http://localhost:5132",  # TV
+        "http://localhost:3000"
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 api.include_router(health.router, prefix=settings.api_prefix, tags=["health"])
 api.include_router(auth.router, prefix=settings.api_prefix, tags=["auth"])
+api.include_router(user_management.router, prefix=settings.api_prefix, tags=["user-management"])
 api.include_router(catalog.router, prefix=settings.api_prefix, tags=["catalog"])
 api.include_router(trebovanja.router, prefix=settings.api_prefix, tags=["trebovanja"])
 api.include_router(zaduznice.router, prefix=settings.api_prefix, tags=["zaduznice"])
 api.include_router(worker.router, prefix=settings.api_prefix, tags=["worker"])
 api.include_router(tv.router, prefix=settings.api_prefix, tags=["tv"])
+api.include_router(kpi.router, prefix=f"{settings.api_prefix}/kpi", tags=["kpi"])
+api.include_router(ai.router, prefix=f"{settings.api_prefix}/ai", tags=["ai"])
+api.include_router(kafka.router, prefix=settings.api_prefix, tags=["kafka"])
+api.include_router(edge.router, prefix=settings.api_prefix, tags=["edge"])
+api.include_router(reports.router, prefix=settings.api_prefix, tags=["reports"])
 api.include_router(import_router.router, prefix=settings.api_prefix, tags=["import"])
 
 Instrumentator().instrument(api).expose(api, include_in_schema=False)

@@ -49,7 +49,7 @@ class ImportProcessor:
 
             async with httpx.AsyncClient(timeout=settings.task_service_timeout_seconds) as client:
                 response = await client.post(
-                    f"{settings.task_service_url}/trebovanja/import",
+                    f"{settings.task_service_url}/api/trebovanja/import",
                     json=payload,
                     headers={
                         "X-User-Id": settings.service_user_id,
@@ -83,6 +83,9 @@ class ImportProcessor:
 
         base_url = settings.task_service_internal_url.rstrip("/")
         headers = {"Authorization": f"Bearer {settings.service_token}"}
+        
+        enriched = 0
+        upserted = 0
 
         async with httpx.AsyncClient(timeout=settings.task_service_timeout_seconds) as client:
             for item in items:
@@ -91,6 +94,7 @@ class ImportProcessor:
                     item["needs_barcode"] = True
                     continue
 
+                # Step 1: Lookup existing article
                 response = await client.get(
                     f"{base_url}/internal/catalog/lookup",
                     params={"sifra": sifra},
@@ -100,8 +104,54 @@ class ImportProcessor:
                 data = response.json()
 
                 artikal_id = data.get("artikal_id")
+                
+                # Step 2: If article doesn't exist, create it
+                if not artikal_id:
+                    logger.info("import.enrich.upsert_article", sifra=sifra, naziv=item.get("naziv"))
+                    upsert_payload = {
+                        "items": [
+                            {
+                                "sifra": sifra,
+                                "naziv": item.get("naziv") or sifra,
+                                "jedinica_mjere": None,  # Will default to "kom" in backend
+                                "barkodovi": [],
+                                "aktivan": True,
+                            }
+                        ],
+                        "options": {
+                            "source": "import",
+                            "deactivate_missing": False,
+                        },
+                    }
+                    
+                    # Add barcode if present in CSV
+                    if item.get("barkod"):
+                        upsert_payload["items"][0]["barkodovi"] = [
+                            {"value": item["barkod"], "is_primary": True}
+                        ]
+                    
+                    upsert_response = await client.post(
+                        f"{base_url}/internal/catalog/upsert-batch",
+                        json=upsert_payload,
+                        headers=headers,
+                    )
+                    upsert_response.raise_for_status()
+                    upserted += 1
+                    
+                    # Re-lookup to get the created article ID
+                    lookup_response = await client.get(
+                        f"{base_url}/internal/catalog/lookup",
+                        params={"sifra": sifra},
+                        headers=headers,
+                    )
+                    lookup_response.raise_for_status()
+                    data = lookup_response.json()
+                    artikal_id = data.get("artikal_id")
+
+                # Step 3: Enrich the item with catalog data
                 if artikal_id:
                     item["artikl_id"] = artikal_id
+                    enriched += 1
 
                 primary_barcode = next(
                     (
@@ -118,3 +168,5 @@ class ImportProcessor:
                     item["barkod"] = primary_barcode
 
                 item["needs_barcode"] = not bool(item.get("barkod"))
+        
+        logger.info("import.enrich.complete", enriched=enriched, upserted=upserted, total=len(items))

@@ -10,7 +10,12 @@ class Settings(BaseSettings):
     def __init__(self, **data):
         super().__init__(**data)
         if not self.cors_origins:
-            self.cors_origins = ["http://localhost:5173", "http://localhost:4173"]
+            self.cors_origins = [
+                "http://localhost:5173", 
+                "http://localhost:4173", 
+                "http://localhost:5130",
+                "http://localhost:3000"
+            ]
 
 
 settings = Settings()

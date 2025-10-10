@@ -36,7 +36,7 @@ class OfflineQueue {
     }
   }
 
-  addAction(type: 'scan' | 'manual', taskItemId: string, payload: any): string {
+  addAction(type: 'scan' | 'manual' | 'pick-by-code' | 'short-pick' | 'not-found' | 'complete-document', taskItemId: string, payload: any): string {
     const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const action: OfflineAction = {
       id,

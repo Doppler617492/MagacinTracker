@@ -6,7 +6,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from ..dependencies import build_forward_headers, get_task_client
-from ..services.auth import get_current_user
+from ..services.auth import get_current_user, require_role
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/worker/tasks", response_model=list[dict])
 async def list_worker_tasks(
     request: Request,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_role("magacioner")),
     client: httpx.AsyncClient = Depends(get_task_client),
 ) -> list[dict]:
     response = await client.get(
@@ -30,7 +30,7 @@ async def list_worker_tasks(
 async def worker_task_detail(
     zaduznica_id: UUID,
     request: Request,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_role("magacioner")),
     client: httpx.AsyncClient = Depends(get_task_client),
 ) -> dict:
     response = await client.get(
@@ -49,7 +49,7 @@ async def worker_scan(
     zaduznica_stavka_id: UUID,
     payload: dict,
     request: Request,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_role("magacioner")),
     client: httpx.AsyncClient = Depends(get_task_client),
 ) -> None:
     response = await client.post(
@@ -66,7 +66,7 @@ async def worker_manual_complete(
     zaduznica_stavka_id: UUID,
     payload: dict,
     request: Request,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_role("magacioner")),
     client: httpx.AsyncClient = Depends(get_task_client),
 ) -> None:
     response = await client.post(

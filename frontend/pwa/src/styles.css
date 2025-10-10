@@ -1,103 +1,156 @@
+/* Enterprise Dark Theme for Magacin Worker PWA */
+/* Optimized for Zebra Android Handhelds */
+
 :root {
   color-scheme: dark;
+  --color-background: #0E1117;
+  --color-card-bg: #1B1F24;
+  --color-accent: #00C896;
+  --color-primary: #007ACC;
+  --color-text: #E5E7EB;
+  --color-text-secondary: #9CA3AF;
+  --color-border: #374151;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
-  font-family: "Inter", sans-serif;
-  background-color: #10121a;
-  color: #f0f3ff;
+  font-family: "Inter", "Roboto", -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 #root {
   min-height: 100vh;
 }
 
-.app-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+/* Disable pull-to-refresh on mobile */
+body {
+  overscroll-behavior-y: contain;
 }
 
-.app-header {
-  padding: 16px 24px;
-  background: rgba(14, 16, 24, 0.8);
-  backdrop-filter: blur(12px);
-  font-weight: 600;
+/* Ant Design overrides for dark theme */
+.ant-progress-bg {
+  background-color: var(--color-accent) !important;
+}
+
+.ant-progress-inner {
+  background-color: var(--color-border) !important;
+}
+
+.ant-spin-dot-item {
+  background-color: var(--color-accent) !important;
+}
+
+.ant-dropdown {
+  background: var(--color-card-bg) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.ant-dropdown-menu {
+  background: var(--color-card-bg) !important;
+}
+
+.ant-dropdown-menu-item {
+  color: var(--color-text) !important;
+}
+
+.ant-dropdown-menu-item:hover {
+  background: var(--color-background) !important;
+}
+
+.ant-dropdown-menu-item-divider {
+  background: var(--color-border) !important;
+}
+
+.ant-badge-dot {
+  box-shadow: none !important;
+}
+
+/* Responsive adjustments for handheld devices */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+  
+  h1, h2, h3 {
+    font-size: clamp(16px, 4vw, 20px);
+  }
+}
+
+/* Touch-friendly tap zones */
+button, a {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Loading spinner overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(14, 17, 23, 0.9);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  z-index: 9999;
 }
 
-.app-header a {
-  color: #7fffd4;
-  text-decoration: none;
+/* Accessibility improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
-.status-dot {
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
-.status-dot.online {
-  background: rgba(34, 197, 94, 0.25);
-  color: #4ade80;
-}
-
-.status-dot.offline {
-  background: rgba(239, 68, 68, 0.25);
-  color: #fca5a5;
-}
-
-.app-main {
-  flex: 1;
-  padding: 24px;
-}
-
-.card {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  display: block;
-  color: inherit;
-  text-decoration: none;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.status {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.status.assigned {
-  background: rgba(59, 130, 246, 0.2);
-  color: #93c5fd;
-}
-
-.status.in_progress {
-  background: rgba(249, 115, 22, 0.2);
-  color: #fb923c;
-}
-
-.status.done {
-  background: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
-}
-
-.status.blocked {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
+/* Prevent text selection on UI elements */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }

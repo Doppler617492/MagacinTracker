@@ -6,7 +6,7 @@ from .import_job import ImportJob
 from .location import Magacin, Radnja
 from .scheduler import SchedulerLog
 from .trebovanje import Trebovanje, TrebovanjeStavka
-from .user import UserAccount, UserRole
+from .user import UserAccount
 from .zaduznica import Zaduznica, ZaduznicaStavka
 
 __all__ = [
@@ -23,7 +23,6 @@ __all__ = [
     "Trebovanje",
     "TrebovanjeStavka",
     "UserAccount",
-    "UserRole",
     "Zaduznica",
     "ZaduznicaStavka",
 ]

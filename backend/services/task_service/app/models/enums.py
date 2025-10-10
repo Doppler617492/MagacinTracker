@@ -4,10 +4,11 @@ from enum import Enum
 
 
 class Role(str, Enum):
-    komercijalista = "komercijalista"
-    sef = "sef"
-    magacioner = "magacioner"
-    menadzer = "menadzer"
+    ADMIN = "ADMIN"
+    MENADZER = "MENADZER"
+    SEF = "SEF"
+    KOMERCIJALISTA = "KOMERCIJALISTA"
+    MAGACIONER = "MAGACIONER"
 
 
 class TrebovanjeStatus(str, Enum):
@@ -57,7 +58,25 @@ class ScanResult(str, Enum):
     duplicate = "duplicate"
 
 
+class DiscrepancyStatus(str, Enum):
+    none = "none"
+    short_pick = "short_pick"
+    not_found = "not_found"
+    damaged = "damaged"
+    wrong_barcode = "wrong_barcode"
+
+
 class AuditAction(str, Enum):
+    # Authentication actions
+    LOGIN_SUCCESS = "LOGIN_SUCCESS"
+    LOGIN_FAILED = "LOGIN_FAILED"
+    LOGOUT = "LOGOUT"
+    PASSWORD_RESET = "PASSWORD_RESET"
+    USER_CREATED = "USER_CREATED"
+    USER_ROLE_CHANGED = "USER_ROLE_CHANGED"
+    USER_DEACTIVATED = "USER_DEACTIVATED"
+    
+    # Business actions
     import_created = "import.created"
     trebovanje_imported = "trebovanje.imported"
     zaduznica_assigned = "zaduznica.assigned"
@@ -70,6 +89,14 @@ class AuditAction(str, Enum):
     catalog_sync = "catalog.sync"
     catalog_enriched = "catalog.enriched"
     catalog_manual_update = "catalog.manual_update"
+    
+    # Shortage tracking actions
+    SCAN_OK = "SCAN_OK"
+    SCAN_MISMATCH = "SCAN_MISMATCH"
+    SHORT_PICK_RECORDED = "SHORT_PICK_RECORDED"
+    NOT_FOUND_RECORDED = "NOT_FOUND_RECORDED"
+    DOC_COMPLETED_INCOMPLETE = "DOC_COMPLETED_INCOMPLETE"
+    LOOKUP_BY_CODE = "LOOKUP_BY_CODE"
 
 
 class SchedulerLogStatus(str, Enum):

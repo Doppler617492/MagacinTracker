@@ -5,10 +5,13 @@ COPY frontend/admin/package.json admin/package.json
 COPY frontend/pwa/package.json pwa/package.json
 COPY frontend/tv/package.json tv/package.json
 RUN npm install
+# Force cache invalidation for source code changes
+ARG CACHEBUST=1
 COPY frontend ./
 RUN npm run build --workspace admin
 
 FROM nginx:1.25-alpine
 COPY --from=build /app/admin/dist /usr/share/nginx/html
+COPY frontend/admin/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

@@ -46,17 +46,21 @@ async def upsert_catalog_batch(
 
 @router.get("/internal/catalog/lookup", response_model=CatalogLookupResponse)
 async def lookup_catalog_item(
-    sifra: str = Query(..., min_length=1),
+    code: str = Query(..., min_length=1, description="Article SKU (sifra) or barcode"),
     service_token: None = Depends(require_service_token),
     db=Depends(get_db),
 ) -> CatalogLookupResponse:
+    """
+    Lookup article by SKU (sifra) or barcode.
+    The system will first search by SKU, then by barcode if not found.
+    """
     service = CatalogService(db)
-    return await service.lookup(sifra)
+    return await service.lookup(code)
 
 
 @router.get("/api/catalog/articles", response_model=CatalogArticleListResponse)
 async def list_catalog_articles(
-    user=Depends(require_roles(Role.menadzer, Role.sef, Role.komercijalista)),
+    user=Depends(require_roles([Role.MENADZER, Role.SEF, Role.KOMERCIJALISTA])),
     db=Depends(get_db),
     search: Optional[str] = Query(default=None, min_length=1),
     page: int = Query(default=1, ge=1),
@@ -76,7 +80,7 @@ async def list_catalog_articles(
 async def update_catalog_article(
     article_id: UUID,
     payload: CatalogArticleUpdate,
-    user=Depends(require_roles(Role.menadzer, Role.sef)),
+    user=Depends(require_roles([Role.MENADZER, Role.SEF])),
     db=Depends(get_db),
 ) -> CatalogArticleResponse:
     service = CatalogService(db)

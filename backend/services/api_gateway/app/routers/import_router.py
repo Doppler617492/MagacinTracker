@@ -4,25 +4,28 @@ import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from ..dependencies import get_import_client
-from ..services.auth import get_current_user
+from ..services.auth import get_current_user, require_roles
 
 router = APIRouter()
 
 
-@router.post("/import/upload", status_code=status.HTTP_202_ACCEPTED)
-async def upload_import_file(
-    file: UploadFile = File(...),
-    user: dict = Depends(get_current_user),
+@router.get("/health")
+async def import_health(
     client: httpx.AsyncClient = Depends(get_import_client),
 ) -> dict:
-    # Check if user has permission to import
-    user_roles = user.get("roles", [])
-    if not any(role in ["komercijalista", "sef"] for role in user_roles):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to import files"
-        )
+    """Health check for import service."""
+    response = await client.get("/health")
+    response.raise_for_status()
+    return response.json()
 
+
+@router.post("/upload", status_code=status.HTTP_202_ACCEPTED)
+async def upload_import_file(
+    file: UploadFile = File(...),
+    user: dict = Depends(require_roles(["komercijalista", "sef"])),
+    client: httpx.AsyncClient = Depends(get_import_client),
+) -> dict:
+    """Upload import file (KOMERCIJALISTA and SEF only)"""
     # Validate file type
     if not file.filename:
         raise HTTPException(
@@ -46,7 +49,7 @@ async def upload_import_file(
         files=files,
         headers={
             "X-User-Id": user.get("id"),
-            "X-User-Roles": ",".join(user_roles),
+            "X-User-Role": user.get("role"),
         },
     )
     

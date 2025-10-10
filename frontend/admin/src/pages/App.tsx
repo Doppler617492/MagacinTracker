@@ -1,5 +1,22 @@
 import { useEffect, useState } from "react";
-import { Layout, Spin, Menu } from "antd";
+import { Layout, Menu, Button } from "antd";
+import { 
+  LogoutOutlined, 
+  DashboardOutlined, 
+  ShoppingOutlined, 
+  CalendarOutlined, 
+  DatabaseOutlined, 
+  ImportOutlined, 
+  BarChartOutlined, 
+  FileTextOutlined, 
+  BulbOutlined, 
+  RobotOutlined, 
+  GlobalOutlined, 
+  ThunderboltOutlined, 
+  SettingOutlined, 
+  TeamOutlined,
+  WarningOutlined
+} from "@ant-design/icons";
 import { Outlet, Route, Routes, Link, useLocation } from "react-router-dom";
 import DashboardPage from "./DashboardPage";
 import TrebovanjaPage from "./TrebovanjaPage";
@@ -7,37 +24,93 @@ import SchedulerPage from "./SchedulerPage";
 import CatalogPage from "./CatalogPage";
 import ImportPage from "./ImportPage";
 import AnalyticsPage from "./AnalyticsPage";
-import { ensureAuth } from "../api";
+import ReportsPage from "./ReportsPage";
+import AIRecommendationsPage from "./AIRecommendationsPage";
+import AIModelDashboardPage from "./AIModelDashboardPage";
+import GlobalAIHubPage from "./GlobalAIHubPage";
+import LiveOpsDashboardPage from "./LiveOpsDashboardPage";
+import GlobalOpsDashboardPage from "./GlobalOpsDashboardPage";
+import UserManagementPage from "./UserManagementPage";
+import ShortageReportsPage from "./ShortageReportsPage";
+import LoginPage from "./LoginPage";
+import { isAuthenticated, logout } from "../api";
 
 const { Header, Content } = Layout;
 
 const AdminLayout = () => {
   const location = useLocation();
+  console.log("🔧 AdminLayout rendered, location:", location.pathname);
   
   const menuItems = [
     {
       key: "/",
+      icon: <DashboardOutlined />,
       label: <Link to="/">Dashboard</Link>
     },
     {
       key: "/trebovanja",
+      icon: <ShoppingOutlined />,
       label: <Link to="/trebovanja">Trebovanja</Link>
     },
     {
       key: "/scheduler",
+      icon: <CalendarOutlined />,
       label: <Link to="/scheduler">Scheduler</Link>
     },
     {
       key: "/catalog",
+      icon: <DatabaseOutlined />,
       label: <Link to="/catalog">Katalog</Link>
     },
     {
       key: "/import",
+      icon: <ImportOutlined />,
       label: <Link to="/import">Uvoz</Link>
     },
     {
       key: "/analytics",
+      icon: <BarChartOutlined />,
       label: <Link to="/analytics">Analitika</Link>
+    },
+    {
+      key: "/reports",
+      icon: <FileTextOutlined />,
+      label: <Link to="/reports">Izvještaji</Link>
+    },
+    {
+      key: "/shortages",
+      icon: <WarningOutlined />,
+      label: <Link to="/shortages">Manjkovi</Link>
+    },
+    {
+      key: "/ai-recommendations",
+      icon: <BulbOutlined />,
+      label: <Link to="/ai-recommendations">AI Preporuke</Link>
+    },
+    {
+      key: "/ai-models",
+      icon: <RobotOutlined />,
+      label: <Link to="/ai-models">AI Modeli</Link>
+    },
+    {
+      key: "/global-ai-hub",
+      icon: <GlobalOutlined />,
+      label: <Link to="/global-ai-hub">Global AI Hub</Link>
+    },
+    {
+      key: "/live-ops",
+      icon: <ThunderboltOutlined />,
+      label: <Link to="/live-ops">Live Ops</Link>
+    },
+    {
+      key: "/global-ops",
+      icon: <SettingOutlined />,
+      label: <Link to="/global-ops">Global Ops</Link>
+    },
+    {
+      key: "/users",
+      icon: <TeamOutlined />,
+      label: <Link to="/users">Korisnici</Link>
     }
   ];
 
@@ -50,8 +123,16 @@ const AdminLayout = () => {
           mode="horizontal"
           selectedKeys={[location.pathname]}
           items={menuItems}
-          style={{ minWidth: "400px" }}
+          style={{ flex: 1, minWidth: "400px" }}
         />
+        <Button 
+          type="text" 
+          icon={<LogoutOutlined />} 
+          onClick={logout}
+          style={{ color: "#fff" }}
+        >
+          Odjava
+        </Button>
       </Header>
       <Content style={{ padding: "24px" }}>
         <Outlet />
@@ -61,23 +142,22 @@ const AdminLayout = () => {
 };
 
 const App = () => {
-  const [ready, setReady] = useState(false);
+  const [authenticated, setAuthenticated] = useState(isAuthenticated());
+  console.log("🚀 App component rendering, authenticated:", authenticated);
 
   useEffect(() => {
-    ensureAuth()
-      .then(() => setReady(true))
-      .catch((error) => {
-        console.error("Auth bootstrap failed", error);
-      });
+    const authStatus = isAuthenticated();
+    console.log("🔐 useEffect - auth status:", authStatus);
+    setAuthenticated(authStatus);
   }, []);
 
-  if (!ready) {
-    return (
-      <Layout style={{ minHeight: "100vh", justifyContent: "center", alignItems: "center" }}>
-        <Spin tip="Prijavljivanje..." size="large" />
-      </Layout>
-    );
+  // Show login page if not authenticated
+  if (!authenticated) {
+    console.log("❌ Not authenticated, showing login page");
+    return <LoginPage onLoginSuccess={() => setAuthenticated(true)} />;
   }
+  
+  console.log("✅ Authenticated, showing admin layout");
 
   return (
     <Routes>
@@ -88,6 +168,14 @@ const App = () => {
         <Route path="catalog" element={<CatalogPage />} />
         <Route path="import" element={<ImportPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="ai-recommendations" element={<AIRecommendationsPage />} />
+        <Route path="ai-models" element={<AIModelDashboardPage />} />
+        <Route path="global-ai-hub" element={<GlobalAIHubPage />} />
+        <Route path="live-ops" element={<LiveOpsDashboardPage />} />
+        <Route path="global-ops" element={<GlobalOpsDashboardPage />} />
+        <Route path="users" element={<UserManagementPage />} />
+        <Route path="shortages" element={<ShortageReportsPage />} />
       </Route>
     </Routes>
   );

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app_common.db import get_db
 
-from ..dependencies import UserContext, require_roles
+from .auth_test import require_role
 from ..models.enums import Role
 from ..schemas import (
     ManualCompleteRequest,
@@ -26,17 +26,17 @@ from ..services.scheduler import SchedulerService
 
 router = APIRouter()
 
-view_roles_dependency = require_roles(Role.sef, Role.magacioner)
+view_roles_dependency = require_role("sef")  # Simplified for now
 
 
 @router.post("/zaduznice", response_model=ZaduznicaCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_zaduznice(
     payload: ZaduznicaCreateRequest,
-    user: UserContext = Depends(require_roles(Role.sef)),
+    user: dict = Depends(require_role("sef")),
     db=Depends(get_db),
 ) -> ZaduznicaCreateResponse:
     try:
-        created = await service.create_zaduznice(db, payload, actor_id=user.id)
+        created = await service.create_zaduznice(db, payload, actor_id=UUID(user["id"]))
     except ValueError as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return ZaduznicaCreateResponse(zaduznica_ids=created)
@@ -46,11 +46,11 @@ async def create_zaduznice(
 async def update_status(
     zaduznica_id: UUID,
     payload: ZaduznicaStatusUpdate,
-    user: UserContext = Depends(require_roles(Role.sef)),
+    user: dict = Depends(require_role("sef")),
     db=Depends(get_db),
 ) -> None:
     try:
-        await service.update_zaduznica_status(db, zaduznica_id, payload.status, actor_id=user.id)
+        await service.update_zaduznica_status(db, zaduznica_id, payload.status, actor_id=UUID(user["id"]))
     except ValueError as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -59,31 +59,31 @@ async def update_status(
 async def reassign(
     zaduznica_id: UUID,
     payload: ZaduznicaReassignRequest,
-    user: UserContext = Depends(require_roles(Role.sef)),
+    user: dict = Depends(require_role("sef")),
     db=Depends(get_db),
 ) -> None:
     try:
-        await service.reassign_zaduznica(db, zaduznica_id, payload.target_magacioner_id, actor_id=user.id)
+        await service.reassign_zaduznica(db, zaduznica_id, payload.target_magacioner_id, actor_id=UUID(user["id"]))
     except ValueError as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.get("/moji-zadaci", response_model=list[WorkerTask])
 async def my_tasks(
-    user: UserContext = Depends(require_roles(Role.magacioner)),
+    user: dict = Depends(require_role("magacioner")),
     db=Depends(get_db),
 ) -> list[WorkerTask]:
-    return await service.list_worker_tasks(db, user.id)
+    return await service.list_worker_tasks(db, UUID(user["id"]))
 
 
 @router.get("/moji-zadaci/{zaduznica_id}", response_model=WorkerTaskDetail)
 async def my_task_detail(
     zaduznica_id: UUID,
-    user: UserContext = Depends(require_roles(Role.magacioner)),
+    user: dict = Depends(require_role("magacioner")),
     db=Depends(get_db),
 ) -> WorkerTaskDetail:
     try:
-        return await service.worker_task_detail(db, zaduznica_id, user.id)
+        return await service.worker_task_detail(db, zaduznica_id, UUID(user["id"]))
     except ValueError as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -92,11 +92,11 @@ async def my_task_detail(
 async def scan_item(
     zaduznica_stavka_id: UUID,
     payload: ScanRequest,
-    user: UserContext = Depends(require_roles(Role.magacioner)),
+    user: dict = Depends(require_role("magacioner")),
     db=Depends(get_db),
 ) -> None:
     try:
-        await service.register_scan(db, zaduznica_stavka_id, payload, actor_id=user.id)
+        await service.register_scan(db, zaduznica_stavka_id, payload, actor_id=UUID(user["id"]))
     except ValueError as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -105,11 +105,11 @@ async def scan_item(
 async def manual_complete(
     zaduznica_stavka_id: UUID,
     payload: ManualCompleteRequest,
-    user: UserContext = Depends(require_roles(Role.magacioner)),
+    user: dict = Depends(require_role("magacioner")),
     db=Depends(get_db),
 ) -> None:
     try:
-        await service.manual_complete(db, zaduznica_stavka_id, payload, actor_id=user.id)
+        await service.manual_complete(db, zaduznica_stavka_id, payload, actor_id=UUID(user["id"]))
     except ValueError as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -127,12 +127,12 @@ async def zaduznica_detail(
 @router.post("/zaduznice/predlog", response_model=SchedulerSuggestionResponse)
 async def suggest_zaduznica_assignment(
     payload: SchedulerSuggestionRequest,
-    user: UserContext = Depends(require_roles(Role.sef)),
+    user: dict = Depends(require_role("sef")),
     db=Depends(get_db),
 ) -> SchedulerSuggestionResponse:
     scheduler = SchedulerService(db)
     try:
-        log_entry, cached = await scheduler.suggest(payload.trebovanje_id, actor_id=user.id)
+        log_entry, cached = await scheduler.suggest(payload.trebovanje_id, actor_id=UUID(user["id"]))
     except ValueError as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -145,3 +145,22 @@ async def suggest_zaduznica_assignment(
         lock_expires_at=log_entry.lock_expires_at,
         cached=cached,
     )
+
+
+@router.post(
+    "/zaduznice/predlog/{trebovanje_id}/cancel",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    response_model=None,
+)
+async def cancel_scheduler_suggestion(
+    trebovanje_id: UUID,
+    user: dict = Depends(require_role("sef")),
+    db=Depends(get_db),
+) -> None:
+    scheduler = SchedulerService(db)
+    try:
+        await service.cancel_trebovanje_assignments(db, trebovanje_id, actor_id=UUID(user["id"]))
+    except ValueError as exc:  # noqa: BLE001
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    await scheduler.cancel_suggestion(trebovanje_id, actor_id=UUID(user["id"]))
