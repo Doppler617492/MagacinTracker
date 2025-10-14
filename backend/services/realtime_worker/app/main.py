@@ -65,9 +65,8 @@ async def worker() -> None:
 # FastAPI app for metrics endpoint
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Start Prometheus metrics server
-    start_http_server(8004)
-    logger.info("realtime-worker.metrics.start", port=8004)
+    # Prometheus metrics are exposed via FastAPI Instrumentator
+    logger.info("realtime-worker.start")
     
     # Start worker task
     worker_task = asyncio.create_task(worker())

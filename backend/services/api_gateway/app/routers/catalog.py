@@ -11,15 +11,21 @@ from ..services.auth import get_current_user
 
 router = APIRouter()
 
-_ALLOWED_LIST_ROLES = {"menadzer", "sef", "komercijalista"}
-_ALLOWED_EDIT_ROLES = {"menadzer", "sef"}
+_ALLOWED_LIST_ROLES = {"admin", "menadzer", "sef", "komercijalista"}
+_ALLOWED_EDIT_ROLES = {"admin", "menadzer", "sef"}
 
 
 def _enforce_roles(user: dict, allowed: set[str]) -> None:
-    roles = set(user.get("roles") or [])
+    # Get user's roles and convert to lowercase for comparison
+    roles = set(str(r).lower() for r in (user.get("roles") or []))
     if user.get("role"):
-        roles.add(str(user["role"]))
-    if roles.isdisjoint(allowed):
+        roles.add(str(user["role"]).lower())
+    
+    # Convert allowed roles to lowercase for case-insensitive comparison
+    allowed_lower = {r.lower() for r in allowed}
+    
+    # Check if user has any of the allowed roles
+    if roles.isdisjoint(allowed_lower):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role")
 
 
@@ -81,6 +87,22 @@ async def trigger_catalog_sync(
         headers=build_forward_headers(request, user),
     )
     if response.status_code not in (200, 202):
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+    return response.json()
+
+
+@router.get("/catalog/stats", response_model=dict)
+async def catalog_stats(
+    request: Request,
+    user: dict = Depends(get_current_user),
+    client: httpx.AsyncClient = Depends(get_catalog_client),
+) -> dict:
+    _enforce_roles(user, _ALLOWED_LIST_ROLES)
+    response = await client.get(
+        "/api/catalog/stats",
+        headers=build_forward_headers(request, user),
+    )
+    if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=response.text)
     return response.json()
 

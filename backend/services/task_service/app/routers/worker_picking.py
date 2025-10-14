@@ -13,6 +13,8 @@ from ..schemas import (
     CatalogLookupResponse,
     CompleteDocumentRequest,
     CompleteDocumentResponse,
+    ManualQuantityRequest,
+    ManualQuantityResponse,
     NotFoundRequest,
     NotFoundResponse,
     PickByCodeRequest,
@@ -41,6 +43,31 @@ async def lookup_by_code(
     return await service.lookup(code)
 
 
+@router.post("/worker/tasks/{stavka_id}/manual-entry", response_model=ManualQuantityResponse)
+async def manual_quantity_entry(
+    stavka_id: UUID,
+    request: ManualQuantityRequest,
+    current_user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+) -> ManualQuantityResponse:
+    """
+    Manual quantity entry without barcode scanning.
+    
+    This is the main endpoint for manual-only picking operations.
+    Supports partial quantities and closing items with reasons.
+    """
+    service = ShortageService(db)
+    user_id = UUID(current_user.get("sub") or current_user.get("id"))
+    
+    try:
+        return await service.enter_manual_quantity(stavka_id, request, user_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
 @router.post("/worker/tasks/{stavka_id}/pick-by-code", response_model=PickByCodeResponse)
 async def pick_by_code(
     stavka_id: UUID,
@@ -55,7 +82,7 @@ async def pick_by_code(
     then increments picked_qty. Idempotent via operation_id.
     """
     service = ShortageService(db)
-    user_id = UUID(current_user["sub"])
+    user_id = UUID(current_user.get("sub") or current_user.get("id"))
     
     try:
         return await service.pick_by_code(stavka_id, request, user_id)
@@ -80,7 +107,7 @@ async def short_pick(
     Sets discrepancy_status to 'short_pick'.
     """
     service = ShortageService(db)
-    user_id = UUID(current_user["sub"])
+    user_id = UUID(current_user.get("sub") or current_user.get("id"))
     
     try:
         return await service.record_short_pick(stavka_id, request, user_id)
@@ -105,7 +132,7 @@ async def not_found(
     Sets discrepancy_status to 'not_found'.
     """
     service = ShortageService(db)
-    user_id = UUID(current_user["sub"])
+    user_id = UUID(current_user.get("sub") or current_user.get("id"))
     
     try:
         return await service.record_not_found(stavka_id, request, user_id)
@@ -130,7 +157,7 @@ async def complete_document(
     Otherwise, the request will be rejected with a 400 error.
     """
     service = ShortageService(db)
-    user_id = UUID(current_user["sub"])
+    user_id = UUID(current_user.get("sub") or current_user.get("id"))
     
     try:
         return await service.complete_document(trebovanje_id, request, user_id)

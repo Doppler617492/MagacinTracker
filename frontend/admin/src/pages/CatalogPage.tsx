@@ -13,10 +13,25 @@ import {
   Typography,
   Switch,
   Popconfirm,
-  Tooltip
+  Tooltip,
+  Alert,
+  Statistic,
+  Row,
+  Col,
+  Modal,
+  Spin
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { 
+  EditOutlined, 
+  DeleteOutlined, 
+  PlusOutlined, 
+  SearchOutlined,
+  SyncOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined
+} from "@ant-design/icons";
 import { useMemo, useState } from "react";
 import client from "../api";
 
@@ -50,6 +65,25 @@ interface CatalogUpdatePayload {
   barkodovi?: CatalogBarcode[];
 }
 
+interface CatalogStats {
+  last_sync_at: string | null;
+  items_active: number;
+  items_inactive: number;
+  last_duration_ms: number | null;
+}
+
+interface CatalogSyncStatus {
+  status: string;
+  started_at: string | null;
+  finished_at: string | null;
+  duration_ms: number | null;
+  items_processed: number;
+  items_created: number;
+  items_updated: number;
+  items_deactivated: number;
+  errors: number;
+}
+
 const JEDINICE_MJERE = [
   { value: "kom", label: "Komad" },
   { value: "kg", label: "Kilogram" },
@@ -79,6 +113,21 @@ const updateCatalogArticle = async (articleId: string, payload: CatalogUpdatePay
   return response.data;
 };
 
+const fetchCatalogStats = async (): Promise<CatalogStats> => {
+  const response = await client.get('/catalog/stats');
+  return response.data;
+};
+
+const fetchCatalogStatus = async (): Promise<CatalogSyncStatus> => {
+  const response = await client.get('/catalog/status');
+  return response.data;
+};
+
+const triggerCatalogSync = async (mode: 'full' | 'delta' = 'full') => {
+  const response = await client.post('/catalog/sync', { mode });
+  return response.data;
+};
+
 const CatalogPage = () => {
   const queryClient = useQueryClient();
   const [selectedArticle, setSelectedArticle] = useState<CatalogArticle | null>(null);
@@ -90,6 +139,30 @@ const CatalogPage = () => {
   const { data, isLoading } = useQuery<CatalogListResponse>({
     queryKey: ["catalog", "articles", searchText, currentPage],
     queryFn: () => fetchCatalogArticles(searchText, currentPage, 25)
+  });
+
+  const { data: stats, refetch: refetchStats } = useQuery<CatalogStats>({
+    queryKey: ["catalog", "stats"],
+    queryFn: fetchCatalogStats,
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
+
+  const { data: syncStatus } = useQuery<CatalogSyncStatus>({
+    queryKey: ["catalog", "status"],
+    queryFn: fetchCatalogStatus,
+    refetchInterval: 5000 // Refresh every 5 seconds when syncing
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: triggerCatalogSync,
+    onSuccess: () => {
+      message.success("Sinhronizacija pokrenuta! Katalog će biti ažuriran u pozadini.");
+      refetchStats();
+      queryClient.invalidateQueries({ queryKey: ["catalog"] });
+    },
+    onError: (error: any) => {
+      message.error(error?.response?.data?.detail ?? "Greška prilikom pokretanja sinhronizacije");
+    }
   });
 
   const updateMutation = useMutation({
@@ -130,6 +203,18 @@ const CatalogPage = () => {
   const handleSearch = (value: string) => {
     setSearchText(value);
     setCurrentPage(1);
+  };
+
+  const handleRunSync = (mode: 'full' | 'delta') => {
+    Modal.confirm({
+      title: `Pokrenuti ${mode === 'full' ? 'potpunu' : 'delta'} sinhronizaciju?`,
+      content: mode === 'full' 
+        ? 'Potpuna sinhronizacija može potrajati nekoliko minuta. Pantheon API će biti pozivan sa rate-limitom za zaštitu sistema.'
+        : 'Delta sinhronizacija će uvesti samo nove ili izmijenjene artikle.',
+      okText: 'Pokreni',
+      cancelText: 'Otkaži',
+      onOk: () => syncMutation.mutate(mode)
+    });
   };
 
   const columns: ColumnsType<CatalogArticle> = [
@@ -203,9 +288,78 @@ const CatalogPage = () => {
   ];
 
   return (
-    <Card 
-      title="Katalog artikala" 
-      extra={
+    <div>
+      {/* Sync Status Bar */}
+      <Card style={{ marginBottom: 16 }}>
+        <Row gutter={[16, 16]} align="middle">
+          <Col span={24}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Title level={4} style={{ margin: 0 }}>Pantheon Catalog Sync</Title>
+                <Space>
+                  <Button 
+                    type="primary"
+                    icon={<SyncOutlined />}
+                    onClick={() => handleRunSync('full')}
+                    loading={syncMutation.isPending}
+                  >
+                    Run Full Sync
+                  </Button>
+                  <Button 
+                    icon={<SyncOutlined />}
+                    onClick={() => handleRunSync('delta')}
+                    loading={syncMutation.isPending}
+                  >
+                    Run Delta Sync
+                  </Button>
+                </Space>
+              </div>
+            </Space>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic
+              title="Aktivni artikli"
+              value={stats?.items_active ?? 0}
+              prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic
+              title="Neaktivni artikli"
+              value={stats?.items_inactive ?? 0}
+              prefix={<ExclamationCircleOutlined style={{ color: '#faad14' }} />}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic
+              title="Posljednja sinhronizacija"
+              value={stats?.last_sync_at ? new Date(stats.last_sync_at).toLocaleString('sr-Latn-ME') : 'Nikada'}
+              prefix={<ClockCircleOutlined />}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic
+              title="Trajanje posljednjeg synca"
+              value={stats?.last_duration_ms ? `${Math.round(stats.last_duration_ms)}ms` : 'N/A'}
+            />
+          </Col>
+        </Row>
+        {syncStatus && syncStatus.status === 'running' && (
+          <Alert
+            message="Sinhronizacija u toku..."
+            description={`Obrađeno: ${syncStatus.items_processed} | Novi: ${syncStatus.items_created} | Ažurirani: ${syncStatus.items_updated}`}
+            type="info"
+            showIcon
+            icon={<Spin />}
+            style={{ marginTop: 16 }}
+          />
+        )}
+      </Card>
+
+      {/* Articles Table */}
+      <Card 
+        title="Katalog artikala" 
+        extra={
         <Space>
           <Input.Search
             placeholder="Pretraži artikle..."
@@ -367,6 +521,7 @@ const CatalogPage = () => {
         )}
       </Drawer>
     </Card>
+    </div>
   );
 };
 

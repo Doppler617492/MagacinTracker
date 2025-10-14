@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   Row,
@@ -24,6 +24,7 @@ import {
   Switch,
   Input
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,
@@ -55,6 +56,7 @@ import {
   getRecentEvents,
   getWorkerActivity,
   getWarehouseLoad,
+  getTvSnapshot,
   simulateEvents,
   publishEvent,
   getTransformerStatus,
@@ -123,6 +125,12 @@ const LiveOpsDashboardPage: React.FC = () => {
     queryKey: ['transformer-status'],
     queryFn: getTransformerStatus,
     refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  const { data: tvSnapshot } = useQuery({
+    queryKey: ['tv-snapshot', liveMode],
+    queryFn: getTvSnapshot,
+    refetchInterval: liveMode ? 15000 : false,
   });
 
   // Mutations
@@ -257,6 +265,80 @@ const LiveOpsDashboardPage: React.FC = () => {
   const eventTimelineData = prepareEventTimelineData();
   const throughputData = prepareThroughputData();
   const workerActivityData = prepareWorkerActivityData();
+  const queueStatusLabels: Record<string, string> = {
+    assigned: 'Dodijeljeno',
+    in_progress: 'U toku',
+    done: 'Završeno',
+    blocked: 'Blokirano',
+  };
+
+  const partialQueueData = useMemo(() => {
+    if (!tvSnapshot?.queue) return [] as Array<{
+      key: string;
+      dokument: string;
+      radnja: string;
+      partial_items: number;
+      total_items: number;
+      shortage_qty: number;
+      status: string;
+    }>;
+
+    return tvSnapshot.queue
+      .filter((item) => (item.partial_items ?? 0) > 0 || (item.shortage_qty ?? 0) > 0)
+      .map((item) => ({
+        key: item.dokument,
+        dokument: item.dokument,
+        radnja: item.radnja,
+        partial_items: item.partial_items ?? 0,
+        total_items: item.total_items ?? 0,
+        shortage_qty: item.shortage_qty ?? 0,
+        status: item.status,
+      }));
+  }, [tvSnapshot?.queue]);
+
+  const partialQueueColumns: ColumnsType<(typeof partialQueueData)[number]> = [
+    {
+      title: 'Dokument',
+      dataIndex: 'dokument',
+      key: 'dokument',
+      width: 160,
+    },
+    {
+      title: 'Radnja',
+      dataIndex: 'radnja',
+      key: 'radnja',
+      width: 180,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 140,
+      render: (status: string) => queueStatusLabels[status] ?? status,
+    },
+    {
+      title: 'Djelimično',
+      dataIndex: 'partial_items',
+      key: 'partial_items',
+      width: 130,
+      render: (value: number, record) => (
+        <span style={{ fontWeight: 600 }}>
+          {value} / {record.total_items}
+        </span>
+      ),
+    },
+    {
+      title: 'Razlika (kom)',
+      dataIndex: 'shortage_qty',
+      key: 'shortage_qty',
+      width: 140,
+      render: (value: number) => (
+        <span style={{ color: value > 0 ? '#ff4d4f' : '#52c41a', fontWeight: 600 }}>
+          {value.toFixed(1)}
+        </span>
+      ),
+    },
+  ];
 
   // Chart configurations
   const eventTimelineChartConfig = {
@@ -432,6 +514,47 @@ const LiveOpsDashboardPage: React.FC = () => {
           </Card>
         </Col>
       </Row>
+      {tvSnapshot && (
+        <Row gutter={16} style={{ marginBottom: '24px' }}>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Djelimične stavke"
+                value={tvSnapshot.kpi.partial_items}
+                prefix={<WarningOutlined />}
+                valueStyle={{ color: tvSnapshot.kpi.partial_items > 0 ? '#fa8c16' : '#52c41a' }}
+              />
+              <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                Aktivne zadužnice: {tvSnapshot.queue.length}
+              </div>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Razlika ukupno (kom)"
+                value={tvSnapshot.kpi.shortage_qty}
+                precision={1}
+                prefix={<ExclamationCircleOutlined />}
+                valueStyle={{ color: tvSnapshot.kpi.shortage_qty > 0 ? '#ff4d4f' : '#52c41a' }}
+              />
+              <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                Dokumenta sa razlikom: {partialQueueData.length}
+              </div>
+            </Card>
+          </Col>
+        </Row>
+      )}
+      {partialQueueData.length > 0 && (
+        <Card title="Djelimične zadužnice" style={{ marginBottom: '24px' }}>
+          <Table
+            columns={partialQueueColumns}
+            dataSource={partialQueueData}
+            pagination={false}
+            size="small"
+          />
+        </Card>
+      )}
 
       {/* System Health Alert */}
       {healthMetrics?.health_metrics?.status === 'degraded' && (

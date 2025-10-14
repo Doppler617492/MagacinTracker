@@ -55,6 +55,8 @@ from .user import (
 from .shortage import (
     CompleteDocumentRequest,
     CompleteDocumentResponse,
+    ManualQuantityRequest,
+    ManualQuantityResponse,
     NotFoundRequest,
     NotFoundResponse,
     PickByCodeRequest,
@@ -123,5 +125,7 @@ __all__ = [
     "NotFoundResponse",
     "CompleteDocumentRequest",
     "CompleteDocumentResponse",
+    "ManualQuantityRequest",
+    "ManualQuantityResponse",
     "ShortageReportItem",
 ]

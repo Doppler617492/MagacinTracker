@@ -94,3 +94,23 @@ class ShortageReportItem(BaseModel):
     magacioner_name: str
     completed_at: Optional[str]
 
+
+class ManualQuantityRequest(BaseModel):
+    """Request for manual quantity entry (no barcode scanning)."""
+    quantity: float = Field(..., ge=0, description="Quantity entered manually")
+    close_item: bool = Field(False, description="Close item even if quantity < required")
+    reason: Optional[str] = Field(None, description="Reason for shortage (mandatory if qty < required or close_item=true)")
+    note: Optional[str] = Field(None, description="Optional additional note")
+    operation_id: str = Field(..., description="Idempotency key for offline sync")
+
+
+class ManualQuantityResponse(BaseModel):
+    """Response after manual quantity entry."""
+    stavka_id: UUID
+    picked_qty: float
+    required_qty: float
+    missing_qty: float
+    status: str  # "novo", "u_toku", "zatvoreno", "djelimicno"
+    discrepancy_status: DiscrepancyStatus
+    message: str
+

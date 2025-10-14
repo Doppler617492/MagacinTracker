@@ -37,6 +37,10 @@ interface QueueEntry {
   radnja: string;
   status: string;
   assigned_to: string[];
+  eta_minutes?: number | null;
+  total_items: number;
+  partial_items: number;
+  shortage_qty: number;
 }
 
 interface KpiSnapshot {
@@ -44,6 +48,8 @@ interface KpiSnapshot {
   completed_percentage: number;
   active_workers: number;
   shift_ends_in_minutes: number;
+  partial_items: number;
+  shortage_qty: number;
 }
 
 interface TvSnapshot {
@@ -240,6 +246,16 @@ const App = () => {
           />
         </div>
         <div className="metric">
+          <MilestoneAnimation
+            value={kpi.partial_items}
+            previousValue={previousKpi?.partial_items || 0}
+            milestone={25}
+            label="Djelimične stavke"
+            icon="⚠️"
+          />
+          <span className="metric-sub">Razlika: {Math.round(kpi.shortage_qty)} kom</span>
+        </div>
+        <div className="metric">
           <span className="metric-label">Vrijeme do kraja smjene</span>
           <span className="metric-value">{Math.round(kpi.shift_ends_in_minutes)} min</span>
         </div>
@@ -317,14 +333,16 @@ const App = () => {
           <div className="queue-list">
             {queue.map((item) => (
               <div className="queue-card" key={item.dokument}>
-                <div className="queue-title">{item.dokument}</div>
-                <div className="queue-sub">{item.radnja}</div>
-                <div className="queue-status">Status: {queueStatusLabels[item.status] ?? item.status}</div>
-                <div className="queue-workers">
-                  Dodijeljeni: {item.assigned_to.length > 0 ? item.assigned_to.map((worker) => worker.slice(0, 8)).join(", ") : "—"}
-                </div>
+              <div className="queue-title">{item.dokument}</div>
+              <div className="queue-sub">{item.radnja}</div>
+              <div className="queue-status">Status: {queueStatusLabels[item.status] ?? item.status}</div>
+              <div className="queue-partial">Djelimično: {item.partial_items}/{item.total_items}</div>
+              <div className="queue-shortage">Razlika: {Math.round(item.shortage_qty)} kom</div>
+              <div className="queue-workers">
+                Dodijeljeni: {item.assigned_to.length > 0 ? item.assigned_to.map((worker) => worker.slice(0, 8)).join(", ") : "—"}
               </div>
-            ))}
+            </div>
+          ))}
           </div>
         </section>
       </main>

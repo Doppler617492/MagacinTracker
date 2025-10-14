@@ -6,8 +6,16 @@ from decimal import Decimal
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models import Radnja, ScanLog, Trebovanje, UserAccount, Zaduznica, ZaduznicaStavka
-from ..models.enums import ZaduznicaStatus
+from ..models import (
+    Radnja,
+    ScanLog,
+    Trebovanje,
+    TrebovanjeStavka,
+    UserAccount,
+    Zaduznica,
+    ZaduznicaStavka,
+)
+from ..models.enums import DiscrepancyStatus, ZaduznicaStatus
 from ..schemas import KpiSnapshot, LeaderboardEntry, QueueEntry, TvSnapshot
 
 SHIFT_END = time(hour=22, minute=0)
@@ -69,6 +77,35 @@ async def build_tv_snapshot(session: AsyncSession) -> TvSnapshot:
             )
         )
 
+    partial_items_subquery = (
+        sa.select(sa.func.count())
+        .select_from(TrebovanjeStavka)
+        .where(
+            TrebovanjeStavka.trebovanje_id == Trebovanje.id,
+            TrebovanjeStavka.discrepancy_status != DiscrepancyStatus.none,
+            TrebovanjeStavka.missing_qty > 0,
+        )
+        .scalar_subquery()
+    )
+
+    shortage_qty_subquery = (
+        sa.select(sa.func.sum(sa.func.coalesce(TrebovanjeStavka.missing_qty, 0)))
+        .select_from(TrebovanjeStavka)
+        .where(
+            TrebovanjeStavka.trebovanje_id == Trebovanje.id,
+            TrebovanjeStavka.discrepancy_status != DiscrepancyStatus.none,
+            TrebovanjeStavka.missing_qty > 0,
+        )
+        .scalar_subquery()
+    )
+
+    total_items_subquery = (
+        sa.select(sa.func.count())
+        .select_from(TrebovanjeStavka)
+        .where(TrebovanjeStavka.trebovanje_id == Trebovanje.id)
+        .scalar_subquery()
+    )
+
     queue_stmt = (
         sa.select(
             Trebovanje.dokument_broj,
@@ -76,6 +113,9 @@ async def build_tv_snapshot(session: AsyncSession) -> TvSnapshot:
             sa.func.min(Zaduznica.status).label("status"),
             sa.func.array_agg(sa.func.distinct(Zaduznica.magacioner_id)).label("assigned"),
             sa.func.max(Radnja.naziv).label("radnja"),
+            total_items_subquery.label("total_items"),
+            partial_items_subquery.label("partial_items"),
+            shortage_qty_subquery.label("shortage_qty"),
         )
         .join(Zaduznica, Zaduznica.trebovanje_id == Trebovanje.id)
         .join(Radnja, Radnja.id == Trebovanje.radnja_id)
@@ -88,12 +128,16 @@ async def build_tv_snapshot(session: AsyncSession) -> TvSnapshot:
     queue: list[QueueEntry] = []
     for row in queue_rows:
         assigned = [str(user_id) for user_id in (row.assigned or []) if user_id]
+        shortage_qty_value = _to_float(row.shortage_qty or 0.0)
         queue.append(
             QueueEntry(
                 dokument=row.dokument_broj,
                 radnja=row.radnja,
                 status=row.status.value if hasattr(row.status, "value") else str(row.status),
                 assigned_to=assigned,
+                total_items=int(row.total_items or 0),
+                partial_items=int(row.partial_items or 0),
+                shortage_qty=shortage_qty_value,
             )
         )
 
@@ -113,6 +157,28 @@ async def build_tv_snapshot(session: AsyncSession) -> TvSnapshot:
     shift_end_dt = datetime.combine(now.date(), SHIFT_END, tzinfo=timezone.utc)
     minutes_remaining = max((shift_end_dt - now).total_seconds() / 60, 0.0)
 
+    partial_stats_stmt = (
+        sa.select(
+            sa.func.count(sa.distinct(TrebovanjeStavka.id)).label("partial_items"),
+            sa.func.sum(sa.func.coalesce(TrebovanjeStavka.missing_qty, 0)).label("shortage_qty"),
+        )
+        .select_from(Zaduznica)
+        .join(ZaduznicaStavka, ZaduznicaStavka.zaduznica_id == Zaduznica.id)
+        .join(TrebovanjeStavka, TrebovanjeStavka.id == ZaduznicaStavka.trebovanje_stavka_id)
+        .where(
+            Zaduznica.created_at >= start_of_day,
+            TrebovanjeStavka.discrepancy_status != DiscrepancyStatus.none,
+            TrebovanjeStavka.missing_qty > 0,
+        )
+    )
+    partial_stats_row = (await session.execute(partial_stats_stmt)).first()
+    if partial_stats_row:
+        partial_items_today = int(partial_stats_row.partial_items or 0)
+        shortage_qty_value_today = _to_float(partial_stats_row.shortage_qty or 0.0)
+    else:
+        partial_items_today = 0
+        shortage_qty_value_today = 0.0
+
     kpi = KpiSnapshot(
         total_tasks_today=int(total_tasks_today or 0),
         completed_percentage=float(
@@ -120,6 +186,8 @@ async def build_tv_snapshot(session: AsyncSession) -> TvSnapshot:
         ),
         active_workers=int(active_workers or 0),
         shift_ends_in_minutes=minutes_remaining,
+        partial_items=partial_items_today,
+        shortage_qty=shortage_qty_value_today,
     )
 
     return TvSnapshot(

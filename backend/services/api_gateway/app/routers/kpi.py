@@ -31,7 +31,13 @@ async def get_kpi_summary(
     if radnik_id:
         params["radnik_id"] = str(radnik_id)
     
-    response = await task_client.get("/api/kpi/summary", params=params)
+    # Forward Authorization header
+    auth_header = request.headers.get("Authorization")
+    headers = {}
+    if auth_header:
+        headers["Authorization"] = auth_header
+    
+    response = await task_client.get("/api/kpi/summary", params=params, headers=headers)
     response.raise_for_status()
     return response.json()
 
@@ -52,7 +58,13 @@ async def get_daily_stats(
     if radnik_id:
         params["radnik_id"] = str(radnik_id)
     
-    response = await task_client.get("/api/kpi/daily-stats", params=params)
+    # Forward Authorization header
+    auth_header = request.headers.get("Authorization")
+    headers = {}
+    if auth_header:
+        headers["Authorization"] = auth_header
+    
+    response = await task_client.get("/api/kpi/daily-stats", params=params, headers=headers)
     response.raise_for_status()
     return response.json()
 
@@ -71,7 +83,13 @@ async def get_top_workers(
     if radnja_id:
         params["radnja_id"] = str(radnja_id)
     
-    response = await task_client.get("/api/kpi/top-workers", params=params)
+    # Forward Authorization header
+    auth_header = request.headers.get("Authorization")
+    headers = {}
+    if auth_header:
+        headers["Authorization"] = auth_header
+    
+    response = await task_client.get("/api/kpi/top-workers", params=params, headers=headers)
     response.raise_for_status()
     return response.json()
 
@@ -92,7 +110,13 @@ async def get_manual_completion_stats(
     if radnik_id:
         params["radnik_id"] = str(radnik_id)
     
-    response = await task_client.get("/api/kpi/manual-completion", params=params)
+    # Forward Authorization header
+    auth_header = request.headers.get("Authorization")
+    headers = {}
+    if auth_header:
+        headers["Authorization"] = auth_header
+    
+    response = await task_client.get("/api/kpi/manual-completion", params=params, headers=headers)
     response.raise_for_status()
     return response.json()
 
@@ -124,7 +148,7 @@ async def get_kpi_forecast(
     radnja_id: Optional[uuid.UUID] = Query(None, description="Filter by radnja ID"),
     radnik_id: Optional[uuid.UUID] = Query(None, description="Filter by radnik ID"),
     task_client: AsyncClient = Depends(get_task_client),
-    _: None = Depends(require_roles(["sef", "menadzer"])),
+    _: None = Depends(require_roles(["sef", "menadzer", "magacioner"])),
 ) -> Dict[str, Any]:
     """Get KPI forecast with confidence intervals and anomaly detection."""
     start_time = datetime.utcnow()

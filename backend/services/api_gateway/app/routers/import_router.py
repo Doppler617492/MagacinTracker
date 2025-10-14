@@ -9,7 +9,7 @@ from ..services.auth import get_current_user, require_roles
 router = APIRouter()
 
 
-@router.get("/health")
+@router.get("/import/health")
 async def import_health(
     client: httpx.AsyncClient = Depends(get_import_client),
 ) -> dict:
@@ -19,13 +19,13 @@ async def import_health(
     return response.json()
 
 
-@router.post("/upload", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/import/upload", status_code=status.HTTP_202_ACCEPTED)
 async def upload_import_file(
     file: UploadFile = File(...),
-    user: dict = Depends(require_roles(["komercijalista", "sef"])),
+    user: dict = Depends(require_roles(["admin", "menadzer", "komercijalista", "sef"])),
     client: httpx.AsyncClient = Depends(get_import_client),
 ) -> dict:
-    """Upload import file (KOMERCIJALISTA and SEF only)"""
+    """Upload import file (ADMIN, MENADZER, KOMERCIJALISTA, and SEF)"""
     # Validate file type
     if not file.filename:
         raise HTTPException(
@@ -33,7 +33,7 @@ async def upload_import_file(
             detail="File name is required"
         )
 
-    allowed_extensions = {".csv", ".xlsx", ".xlsm"}
+    allowed_extensions = {".csv", ".xlsx", ".xlsm", ".pdf"}
     file_extension = file.filename.lower().split(".")[-1] if "." in file.filename else ""
     if f".{file_extension}" not in allowed_extensions:
         raise HTTPException(

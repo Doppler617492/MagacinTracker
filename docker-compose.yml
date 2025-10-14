@@ -50,6 +50,21 @@ services:
       - default
       - monitoring
 
+  catalog-service:
+    build:
+      context: .
+      dockerfile: backend/services/catalog_service/Dockerfile
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+      - task-service
+    ports:
+      - "8002:8002"
+    networks:
+      - default
+      - monitoring
+
   realtime-worker:
     build:
       context: .
@@ -58,8 +73,7 @@ services:
     depends_on:
       - redis
       - api-gateway
-    ports:
-      - "8004:8004"
+    # Port 8004 not exposed externally - internal service only
     networks:
       - default
       - monitoring

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Layout, Menu, Button } from "antd";
+import { Layout, Menu, Button, Typography, Space, Dropdown } from "antd";
 import { 
   LogoutOutlined, 
   DashboardOutlined, 
@@ -33,7 +33,16 @@ import GlobalOpsDashboardPage from "./GlobalOpsDashboardPage";
 import UserManagementPage from "./UserManagementPage";
 import ShortageReportsPage from "./ShortageReportsPage";
 import LoginPage from "./LoginPage";
-import { isAuthenticated, logout } from "../api";
+import { isAuthenticated, logout, fetchMe } from "../api";
+
+type StoredUser = {
+  id?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  role?: string;
+};
 
 const { Header, Content } = Layout;
 
@@ -125,19 +134,81 @@ const AdminLayout = () => {
           items={menuItems}
           style={{ flex: 1, minWidth: "400px" }}
         />
-        <Button 
-          type="text" 
-          icon={<LogoutOutlined />} 
-          onClick={logout}
-          style={{ color: "#fff" }}
-        >
-          Odjava
-        </Button>
+        <Space size="large" align="center">
+          <UserMenu />
+        </Space>
       </Header>
       <Content style={{ padding: "24px" }}>
         <Outlet />
       </Content>
     </Layout>
+  );
+};
+
+const UserBadge = () => {
+  const [user, setUser] = useState<StoredUser | null>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("auth_user");
+      if (raw) setUser(JSON.parse(raw));
+    } catch {
+      setUser(null);
+    }
+    // Fallback: if no user cached, try to fetch from /auth/me
+    if (!localStorage.getItem("auth_user")) {
+      fetchMe().then((me) => {
+        if (me) {
+          try {
+            localStorage.setItem("auth_user", JSON.stringify(me));
+            setUser(me);
+          } catch {}
+        }
+      }).catch(() => void 0);
+    }
+  }, []);
+  const displayName = user?.full_name || user?.first_name || user?.email || "Korisnik";
+  const role = user?.role ? String(user.role).toUpperCase() : undefined;
+  return (
+    <Typography.Text style={{ color: "#fff" }}>
+      {displayName}{role ? ` • ${role}` : ""}
+    </Typography.Text>
+  );
+};
+
+const UserMenu = () => {
+  const [user, setUser] = useState<StoredUser | null>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("auth_user");
+      if (raw) setUser(JSON.parse(raw));
+    } catch {}
+  }, []);
+  const menuItems = [
+    {
+      key: "profile",
+      label: (
+        <div style={{ padding: 8 }}>
+          <div style={{ fontWeight: 600 }}>{user?.full_name || user?.email || "Korisnik"}</div>
+          <div style={{ opacity: 0.8, fontSize: 12 }}>{user?.role ? String(user.role).toUpperCase() : ""}</div>
+        </div>
+      ),
+    },
+    { type: "divider" as const },
+    {
+      key: "logout",
+      label: <span onClick={logout}>Odjava</span>,
+    },
+  ];
+  return (
+    <Dropdown
+      menu={{ items: menuItems }}
+      placement="bottomRight"
+      trigger={["click"]}
+    >
+      <div style={{ cursor: "pointer" }}>
+        <UserBadge />
+      </div>
+    </Dropdown>
   );
 };
 

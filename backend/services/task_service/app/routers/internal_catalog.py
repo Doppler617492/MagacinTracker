@@ -60,7 +60,7 @@ async def lookup_catalog_item(
 
 @router.get("/api/catalog/articles", response_model=CatalogArticleListResponse)
 async def list_catalog_articles(
-    user=Depends(require_roles([Role.MENADZER, Role.SEF, Role.KOMERCIJALISTA])),
+    user=Depends(require_roles([Role.ADMIN, Role.MENADZER, Role.SEF, Role.KOMERCIJALISTA])),
     db=Depends(get_db),
     search: Optional[str] = Query(default=None, min_length=1),
     page: int = Query(default=1, ge=1),
@@ -80,7 +80,7 @@ async def list_catalog_articles(
 async def update_catalog_article(
     article_id: UUID,
     payload: CatalogArticleUpdate,
-    user=Depends(require_roles([Role.MENADZER, Role.SEF])),
+    user=Depends(require_roles([Role.ADMIN, Role.MENADZER, Role.SEF])),
     db=Depends(get_db),
 ) -> CatalogArticleResponse:
     service = CatalogService(db)

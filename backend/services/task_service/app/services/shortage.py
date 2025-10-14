@@ -17,6 +17,8 @@ from ..models.enums import AuditAction, DiscrepancyStatus, TrebovanjeStatus
 from ..schemas.shortage import (
     CompleteDocumentRequest,
     CompleteDocumentResponse,
+    ManualQuantityRequest,
+    ManualQuantityResponse,
     NotFoundRequest,
     NotFoundResponse,
     PickByCodeRequest,
@@ -68,9 +70,11 @@ class ShortageService:
             # Code not found in catalog
             await record_audit(
                 self.session,
-                AuditAction.SCAN_MISMATCH,
-                user_id,
-                {"stavka_id": str(stavka_id), "code": request.code, "reason": "not_in_catalog"},
+                action=AuditAction.SCAN_MISMATCH,
+                actor_id=user_id,
+                entity_type="trebovanje_stavka",
+                entity_id=str(stavka_id),
+                payload={"stavka_id": str(stavka_id), "code": request.code, "reason": "not_in_catalog"},
             )
             raise ValueError(f"Code '{request.code}' not found in catalog")
         
@@ -79,9 +83,11 @@ class ShortageService:
             # Mismatch!
             await record_audit(
                 self.session,
-                AuditAction.SCAN_MISMATCH,
-                user_id,
-                {
+                action=AuditAction.SCAN_MISMATCH,
+                actor_id=user_id,
+                entity_type="trebovanje_stavka",
+                entity_id=str(stavka_id),
+                payload={
                     "stavka_id": str(stavka_id),
                     "code": request.code,
                     "expected_artikal_id": str(stavka.artikal_id),
@@ -119,9 +125,11 @@ class ShortageService:
         # Audit
         await record_audit(
             self.session,
-            AuditAction.SCAN_OK,
-            user_id,
-            {
+            action=AuditAction.SCAN_OK,
+            actor_id=user_id,
+            entity_type="trebovanje_stavka",
+            entity_id=str(stavka_id),
+            payload={
                 "stavka_id": str(stavka_id),
                 "code": request.code,
                 "quantity": request.quantity,
@@ -168,9 +176,11 @@ class ShortageService:
         # Audit
         await record_audit(
             self.session,
-            AuditAction.SHORT_PICK_RECORDED,
-            user_id,
-            {
+            action=AuditAction.SHORT_PICK_RECORDED,
+            actor_id=user_id,
+            entity_type="trebovanje_stavka",
+            entity_id=str(stavka_id),
+            payload={
                 "stavka_id": str(stavka_id),
                 "actual_qty": request.actual_qty,
                 "required_qty": required,
@@ -216,9 +226,11 @@ class ShortageService:
         # Audit
         await record_audit(
             self.session,
-            AuditAction.NOT_FOUND_RECORDED,
-            user_id,
-            {
+            action=AuditAction.NOT_FOUND_RECORDED,
+            actor_id=user_id,
+            entity_type="trebovanje_stavka",
+            entity_id=str(stavka_id),
+            payload={
                 "stavka_id": str(stavka_id),
                 "required_qty": required,
                 "reason": request.reason,
@@ -287,9 +299,11 @@ class ShortageService:
         # Audit
         await record_audit(
             self.session,
-            AuditAction.DOC_COMPLETED_INCOMPLETE if items_with_shortages > 0 else AuditAction.manual_complete,
-            user_id,
-            {
+            action=AuditAction.DOC_COMPLETED_INCOMPLETE if items_with_shortages > 0 else AuditAction.manual_complete,
+            actor_id=user_id,
+            entity_type="trebovanje",
+            entity_id=str(trebovanje_id),
+            payload={
                 "trebovanje_id": str(trebovanje_id),
                 "total_items": total_items,
                 "completed_items": completed_items,
@@ -309,4 +323,109 @@ class ShortageService:
             message=f"Document completed with {items_with_shortages} shortage(s)" if items_with_shortages > 0 
                    else "Document completed successfully",
         )
+    
+    async def enter_manual_quantity(
+        self,
+        stavka_id: UUID,
+        request: ManualQuantityRequest,
+        user_id: UUID,
+    ) -> ManualQuantityResponse:
+        """
+        Manual quantity entry without barcode scanning.
+        
+        This is the main endpoint for manual-only picking operations.
+        Supports partial quantities and closing items with reasons.
+        """
+        # Load the stavka
+        stmt = select(TrebovanjeStavka).where(TrebovanjeStavka.id == stavka_id)
+        result = await self.session.execute(stmt)
+        stavka = result.scalar_one_or_none()
+        
+        if not stavka:
+            raise ValueError(f"Stavka {stavka_id} not found")
+        
+        required = float(stavka.kolicina_trazena)
+        
+        # Validate quantity doesn't exceed required (ALLOW_OVERPICK=false)
+        if request.quantity > required:
+            raise ValueError(f"Quantity {request.quantity} exceeds required {required}")
+        
+        # Check if reason is mandatory
+        reason_required = request.quantity < required or (request.close_item and request.quantity == 0)
+        if reason_required and not request.reason:
+            raise ValueError("Reason is mandatory when quantity < required or closing item with 0")
+        
+        # Update the stavka
+        stavka.picked_qty = request.quantity
+        stavka.missing_qty = max(0, required - request.quantity)
+        stavka.discrepancy_reason = request.reason
+        # Note: we could store request.note in a new field if needed
+        
+        # Determine status
+        status = "novo"
+        if request.quantity == required:
+            # Fully picked
+            status = "zatvoreno"
+            stavka.discrepancy_status = DiscrepancyStatus.none
+        elif request.close_item:
+            # Closed with shortage
+            status = "djelimicno"
+            stavka.discrepancy_status = DiscrepancyStatus.short_pick
+        elif request.quantity > 0:
+            # In progress
+            status = "u_toku"
+            stavka.discrepancy_status = DiscrepancyStatus.none
+        else:
+            # Zero quantity, not closed
+            status = "novo"
+            stavka.discrepancy_status = DiscrepancyStatus.none
+        
+        await self.session.commit()
+        await self.session.refresh(stavka)
+        
+        # Audit
+        audit_action = AuditAction.MANUAL_QTY_SAVED
+        if status == "djelimicno":
+            audit_action = AuditAction.ITEM_PARTIAL
+        elif status == "zatvoreno":
+            audit_action = AuditAction.ITEM_CLOSED
+        
+        await record_audit(
+            self.session,
+            action=audit_action,
+            actor_id=user_id,
+            entity_type="trebovanje_stavka",
+            entity_id=str(stavka_id),
+            payload={
+                "stavka_id": str(stavka_id),
+                "quantity": request.quantity,
+                "required_qty": required,
+                "close_item": request.close_item,
+                "reason": request.reason,
+                "note": request.note,
+                "status": status,
+                "operation_id": request.operation_id,
+            },
+        )
+        
+        # Build message
+        if status == "zatvoreno":
+            msg = f"Stavka završena: {request.quantity}/{required}"
+        elif status == "djelimicno":
+            msg = f"Stavka djelimično završena: {request.quantity}/{required}. Razlog: {request.reason}"
+        elif status == "u_toku":
+            msg = f"Količina unesena: {request.quantity}/{required}. Stavka u toku."
+        else:
+            msg = f"Količina unesena: {request.quantity}"
+        
+        return ManualQuantityResponse(
+            stavka_id=stavka.id,
+            picked_qty=float(stavka.picked_qty),
+            required_qty=required,
+            missing_qty=float(stavka.missing_qty),
+            status=status,
+            discrepancy_status=stavka.discrepancy_status,
+            message=msg,
+        )
+
 

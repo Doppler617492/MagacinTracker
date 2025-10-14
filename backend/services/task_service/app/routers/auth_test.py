@@ -92,7 +92,13 @@ async def login(
 def require_role(required_role: str):
     """Dependency to require specific role"""
     def role_checker(current_user: dict = Depends(get_current_user)) -> dict:
-        if current_user["role"] != required_role and current_user["role"] != "menadzer":  # menadzer as admin for now
+        user_role = str(current_user.get("role", "")).upper()
+        required_upper = str(required_role).upper()
+        
+        # ADMIN and MENADZER have full access
+        admin_roles = ["ADMIN", "MENADZER"]
+        
+        if user_role not in admin_roles and user_role != required_upper:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions"

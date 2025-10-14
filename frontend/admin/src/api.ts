@@ -22,6 +22,12 @@ export async function login(email: string, password: string): Promise<string> {
   token = accessToken;
   localStorage.setItem('auth_token', accessToken);
   client.defaults.headers.common.Authorization = `Bearer ${token}`;
+  // Persist user profile if provided by backend
+  if (response.data?.user) {
+    try {
+      localStorage.setItem('auth_user', JSON.stringify(response.data.user));
+    } catch {}
+  }
   
   return accessToken;
 }
@@ -30,6 +36,7 @@ export function logout(): void {
   console.log("🔐 Logout called");
   token = null;
   localStorage.removeItem('auth_token');
+  localStorage.removeItem('auth_user');
   delete client.defaults.headers.common.Authorization;
   window.location.href = '/';
 }
@@ -71,6 +78,16 @@ export function isAuthenticated(): boolean {
     // Invalid token format, just return false without calling logout
     console.log("🔐 Invalid token format, not authenticated:", error);
     return false;
+  }
+}
+
+// Fetch current user profile from API Gateway
+export async function fetchMe(): Promise<any | null> {
+  try {
+    const res = await client.get("/auth/me");
+    return res.data;
+  } catch (e) {
+    return null;
   }
 }
 
@@ -843,6 +860,39 @@ export async function getWorkerActivity(): Promise<{ worker_activity: WorkerActi
 export async function getWarehouseLoad(): Promise<{ warehouse_load: WarehouseLoad; total_warehouses: number; timestamp: string }> {
   await ensureAuth();
   const response = await client.get("/stream/events/warehouse-load");
+  return response.data;
+}
+
+export interface TvQueueEntry {
+  dokument: string;
+  radnja: string;
+  status: string;
+  assigned_to: string[];
+  eta_minutes?: number | null;
+  total_items: number;
+  partial_items: number;
+  shortage_qty: number;
+}
+
+export interface TvKpiSnapshot {
+  total_tasks_today: number;
+  completed_percentage: number;
+  active_workers: number;
+  shift_ends_in_minutes: number;
+  partial_items: number;
+  shortage_qty: number;
+}
+
+export interface TvSnapshotResponse {
+  generated_at: string;
+  leaderboard: any[];
+  queue: TvQueueEntry[];
+  kpi: TvKpiSnapshot;
+}
+
+export async function getTvSnapshot(): Promise<TvSnapshotResponse> {
+  await ensureAuth();
+  const response = await client.get("/tv/snapshot");
   return response.data;
 }
 

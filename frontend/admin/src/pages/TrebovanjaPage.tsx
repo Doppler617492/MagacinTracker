@@ -114,7 +114,8 @@ const TrebovanjaPage = () => {
 
   const { data, isLoading } = useQuery<TrebovanjeListResponse>({
     queryKey: ["trebovanja"],
-    queryFn: fetchTrebovanja
+    queryFn: fetchTrebovanja,
+    refetchInterval: 15000, // Refetch every 15 seconds to see worker updates
   });
 
   // Fetch magacioneri dynamically

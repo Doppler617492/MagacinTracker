@@ -8,7 +8,7 @@ const { Text } = Typography;
 
 interface OfflineAction {
   id: string;
-  type: 'scan' | 'manual';
+  type: 'scan' | 'manual-entry' | 'pick-by-code' | 'short-pick' | 'not-found' | 'complete-document';
   taskItemId: string;
   payload: any;
   timestamp: number;
@@ -29,10 +29,15 @@ const OfflineQueueComponent = () => {
     };
 
     networkManager.addListener(handleNetworkChange);
+    const handleQueueState = () => {
+      setQueue(offlineQueue.getActions());
+    };
+    offlineQueue.addListener(handleQueueState);
     updateQueue();
 
     return () => {
       networkManager.removeListener(handleNetworkChange);
+      offlineQueue.removeListener(handleQueueState);
     };
   }, []);
 
@@ -50,8 +55,18 @@ const OfflineQueueComponent = () => {
       try {
         if (action.type === 'scan') {
           await client.post(`/worker/tasks/${action.taskItemId}/scan`, action.payload);
-        } else if (action.type === 'manual') {
-          await client.post(`/worker/tasks/${action.taskItemId}/complete-manual`, action.payload);
+        } else if (action.type === 'manual-entry') {
+          await client.post(`/worker/tasks/${action.taskItemId}/manual-entry`, action.payload);
+        } else if (action.type === 'pick-by-code') {
+          message.info('Rad samo sa ručnim unosom – pick-by-code akcija uklonjena.');
+          offlineQueue.removeAction(action.id);
+          continue;
+        } else if (action.type === 'short-pick') {
+          await client.post(`/worker/tasks/${action.taskItemId}/short-pick`, action.payload);
+        } else if (action.type === 'not-found') {
+          await client.post(`/worker/tasks/${action.taskItemId}/not-found`, action.payload);
+        } else if (action.type === 'complete-document') {
+          await client.post(`/worker/documents/${action.taskItemId}/complete`, action.payload);
         }
         
         offlineQueue.removeAction(action.id);
@@ -153,7 +168,12 @@ const OfflineQueueComponent = () => {
                 title={
                   <Space>
                     <Text style={{ fontSize: '12px' }}>
-                      {action.type === 'scan' ? 'Skeniranje' : 'Ručno'}
+                      {action.type === 'scan' && 'Skeniranje'}
+                      {action.type === 'manual-entry' && 'Ručno unošenje'}
+                      {action.type === 'pick-by-code' && 'Sken kodom'}
+                      {action.type === 'short-pick' && 'Djelimično zatvaranje'}
+                      {action.type === 'not-found' && 'Nije pronađeno'}
+                      {action.type === 'complete-document' && 'Završetak dokumenta'}
                     </Text>
                     {action.retries > 0 && (
                       <Tag color="orange" style={{ fontSize: '10px' }}>

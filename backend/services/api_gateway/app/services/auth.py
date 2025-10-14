@@ -42,7 +42,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict[str, Any
 def require_role(required_role: str):
     """Dependency to require specific role"""
     def role_checker(current_user: dict = Depends(get_current_user)) -> dict:
-        if current_user["role"] != required_role and current_user["role"] != "menadzer":  # menadzer as admin
+        user_role = current_user["role"].upper() if current_user.get("role") else ""
+        required_upper = required_role.upper()
+        # ADMIN and MENADZER have full access
+        admin_roles = ["ADMIN", "MENADZER"]
+        if user_role not in admin_roles and user_role != required_upper:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions"
@@ -54,7 +58,11 @@ def require_role(required_role: str):
 def require_roles(required_roles: list[str]):
     """Dependency to require one of multiple roles"""
     def role_checker(current_user: dict = Depends(get_current_user)) -> dict:
-        if current_user["role"] not in required_roles and current_user["role"] != "menadzer":  # menadzer as admin
+        user_role = current_user["role"].upper() if current_user.get("role") else ""
+        required_upper = [role.upper() for role in required_roles]
+        # ADMIN and MENADZER have full access
+        admin_roles = ["ADMIN", "MENADZER"]
+        if user_role not in admin_roles and user_role not in required_upper:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions"

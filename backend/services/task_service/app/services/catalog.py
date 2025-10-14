@@ -269,7 +269,7 @@ class CatalogService:
             .where(Artikal.sifra == code)
         )
         result = await self.session.execute(stmt)
-        artikal = result.scalar_one_or_none()
+        artikal = result.unique().scalar_one_or_none()
         
         # If not found by SKU, try by barcode
         if not artikal:
@@ -280,7 +280,7 @@ class CatalogService:
                 .where(ArtikalBarkod.barkod == code)
             )
             result = await self.session.execute(stmt)
-            artikal = result.scalar_one_or_none()
+            artikal = result.unique().scalar_one_or_none()
         
         if not artikal:
             return CatalogLookupResponse(

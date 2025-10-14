@@ -1,11 +1,11 @@
 /**
  * NumPad Component - Touch-optimized numeric keypad for quantity entry
- * 
+ *
  * Designed for Zebra handheld devices with large touch targets
  * and clear visual feedback.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Button, Space } from 'antd';
 import { DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { theme } from '../theme';
@@ -16,8 +16,14 @@ interface NumPadProps {
   defaultValue?: number;
   maxValue?: number;
   minValue?: number;
+  allowDecimal?: boolean;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  confirmLoading?: boolean;
+  extraContent?: React.ReactNode;
   onConfirm: (value: number) => void;
   onCancel: () => void;
+  onValueChange?: (value: number) => void;
 }
 
 const NumPad: React.FC<NumPadProps> = ({
@@ -26,65 +32,78 @@ const NumPad: React.FC<NumPadProps> = ({
   defaultValue,
   maxValue,
   minValue = 0,
+  allowDecimal = false,
+  confirmLabel = 'Sačuvaj',
+  cancelLabel = 'Odustani',
+  confirmLoading = false,
+  extraContent,
   onConfirm,
   onCancel,
+  onValueChange,
 }) => {
-  const [value, setValue] = useState(defaultValue?.toString() || '0');
+  const [value, setValue] = useState<string>(defaultValue?.toString() ?? '0');
 
-  // Reset value when modal opens
-  React.useEffect(() => {
-    if (visible) {
-      setValue(defaultValue?.toString() || '0');
+  const emitValueChange = (next: string) => {
+    setValue(next);
+    if (onValueChange) {
+      const parsed = parseFloat(next);
+      onValueChange(Number.isNaN(parsed) ? 0 : parsed);
     }
+  };
+
+  useEffect(() => {
+    if (visible) {
+      const seed = defaultValue !== undefined ? defaultValue.toString() : '0';
+      emitValueChange(seed);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, defaultValue]);
 
-  const handleNumberClick = (num: string) => {
-    setValue(prev => {
-      if (prev === '0') return num;
-      return prev + num;
-    });
+  const handleNumberClick = (digit: string) => {
+    const next = value === '0' ? digit : `${value}${digit}`;
+    emitValueChange(next);
   };
 
   const handleBackspace = () => {
-    setValue(prev => {
-      if (prev.length === 1) return '0';
-      return prev.slice(0, -1);
-    });
+    if (value.length <= 1) {
+      emitValueChange('0');
+      return;
+    }
+    emitValueChange(value.slice(0, -1));
   };
 
   const handleClear = () => {
-    setValue('0');
-  };
-
-  const handleConfirm = () => {
-    const numValue = parseFloat(value);
-    
-    // Validation
-    if (isNaN(numValue)) {
-      setValue('0');
-      return;
-    }
-    
-    if (numValue < minValue) {
-      setValue(minValue.toString());
-      return;
-    }
-    
-    if (maxValue !== undefined && numValue > maxValue) {
-      setValue(maxValue.toString());
-      return;
-    }
-    
-    onConfirm(numValue);
+    emitValueChange('0');
   };
 
   const handleDecimal = () => {
-    if (!value.includes('.')) {
-      setValue(prev => prev + '.');
+    if (!allowDecimal || value.includes('.')) {
+      return;
     }
+    emitValueChange(`${value}.`);
   };
 
-  // Number button style
+  const handleConfirm = () => {
+    const numeric = parseFloat(value);
+
+    if (Number.isNaN(numeric)) {
+      emitValueChange('0');
+      return;
+    }
+
+    if (numeric < minValue) {
+      emitValueChange(minValue.toString());
+      return;
+    }
+
+    if (maxValue !== undefined && numeric > maxValue) {
+      emitValueChange(maxValue.toString());
+      return;
+    }
+
+    onConfirm(numeric);
+  };
+
   const numberButtonStyle: React.CSSProperties = {
     width: '100%',
     height: '70px',
@@ -105,27 +124,13 @@ const NumPad: React.FC<NumPadProps> = ({
     color: theme.colors.text,
   };
 
-  const confirmButtonStyle: React.CSSProperties = {
-    ...numberButtonStyle,
-    background: theme.colors.success,
-    color: '#ffffff',
-    fontSize: '20px',
-  };
-
-  const cancelButtonStyle: React.CSSProperties = {
-    ...numberButtonStyle,
-    background: theme.colors.error,
-    color: '#ffffff',
-    fontSize: '20px',
-  };
-
   return (
     <Modal
       open={visible}
       title={null}
       footer={null}
       onCancel={onCancel}
-      width={400}
+      width={420}
       style={{ maxWidth: '95vw' }}
       styles={{
         body: {
@@ -136,7 +141,6 @@ const NumPad: React.FC<NumPadProps> = ({
       closeIcon={<CloseOutlined style={{ color: theme.colors.text }} />}
     >
       <div>
-        {/* Title */}
         <div
           style={{
             color: theme.colors.text,
@@ -149,7 +153,6 @@ const NumPad: React.FC<NumPadProps> = ({
           {title}
         </div>
 
-        {/* Display */}
         <div
           style={{
             background: theme.colors.cardBackground,
@@ -176,7 +179,6 @@ const NumPad: React.FC<NumPadProps> = ({
           </div>
         </div>
 
-        {/* Hints */}
         {maxValue !== undefined && (
           <div
             style={{
@@ -190,7 +192,6 @@ const NumPad: React.FC<NumPadProps> = ({
           </div>
         )}
 
-        {/* Number Grid */}
         <div
           style={{
             display: 'grid',
@@ -199,26 +200,25 @@ const NumPad: React.FC<NumPadProps> = ({
             marginBottom: theme.spacing.md,
           }}
         >
-          {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map(num => (
+          {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map((num) => (
             <button
               key={num}
               onClick={() => handleNumberClick(num)}
               style={numberButtonStyle}
-              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-              onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+              onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
               {num}
             </button>
           ))}
 
-          {/* Bottom row: Clear, 0, Decimal */}
           <button
             onClick={handleClear}
             style={actionButtonStyle}
-            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
           >
             C
           </button>
@@ -226,9 +226,9 @@ const NumPad: React.FC<NumPadProps> = ({
           <button
             onClick={() => handleNumberClick('0')}
             style={numberButtonStyle}
-            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
           >
             0
           </button>
@@ -236,15 +236,14 @@ const NumPad: React.FC<NumPadProps> = ({
           <button
             onClick={handleDecimal}
             style={actionButtonStyle}
-            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
           >
             .
           </button>
         </div>
 
-        {/* Action Row: Backspace */}
         <button
           onClick={handleBackspace}
           style={{
@@ -256,48 +255,55 @@ const NumPad: React.FC<NumPadProps> = ({
             justifyContent: 'center',
             gap: theme.spacing.sm,
           }}
-          onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-          onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
+          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
         >
           <DeleteOutlined style={{ fontSize: '20px' }} />
           <span>Obriši</span>
         </button>
 
-        {/* Confirm/Cancel Row */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: theme.spacing.md,
-          }}
-        >
-          <button
-            onClick={onCancel}
-            style={cancelButtonStyle}
-            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <CloseOutlined style={{ marginRight: theme.spacing.xs }} />
-            Otkaži
-          </button>
+        {extraContent && (
+          <div style={{ marginBottom: theme.spacing.md }}>{extraContent}</div>
+        )}
 
-          <button
-            onClick={handleConfirm}
-            style={confirmButtonStyle}
-            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        <Space size={theme.spacing.md} style={{ width: '100%' }}>
+          <Button
+            block
+            size="large"
+            onClick={onCancel}
+            style={{
+              height: '70px',
+              background: theme.colors.error,
+              color: '#ffffff',
+              border: 'none',
+              fontWeight: 600,
+            }}
+            icon={<CloseOutlined />}
           >
-            <CheckOutlined style={{ marginRight: theme.spacing.xs }} />
-            Potvrdi
-          </button>
-        </div>
+            {cancelLabel}
+          </Button>
+
+          <Button
+            type="primary"
+            block
+            size="large"
+            onClick={handleConfirm}
+            loading={confirmLoading}
+            style={{
+              height: '70px',
+              background: theme.colors.success,
+              border: 'none',
+              fontWeight: 600,
+            }}
+            icon={<CheckOutlined />}
+          >
+            {confirmLabel}
+          </Button>
+        </Space>
       </div>
     </Modal>
   );
 };
 
 export default NumPad;
-

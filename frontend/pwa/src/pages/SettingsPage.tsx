@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, Switch, message } from 'antd';
 import {
@@ -6,24 +6,61 @@ import {
   LogoutOutlined,
   MobileOutlined,
   SettingOutlined,
-  GlobalOutlined,
 } from '@ant-design/icons';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import BottomNav from '../components/BottomNav';
 import { theme } from '../theme';
-import { logout } from '../api';
+import { logout, getStoredUserProfile, StoredUserProfile } from '../api';
+import { offlineQueue } from '../lib/offlineQueue';
+import type { OfflineQueueState } from '../lib/offlineQueue';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const [autoSync, setAutoSync] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [userProfile, setUserProfile] = useState<StoredUserProfile | null>(getStoredUserProfile());
+  const [warehouseName, setWarehouseName] = useState<string>(getStoredUserProfile()?.location ?? 'Tranzitno skladište');
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [pendingSync, setPendingSync] = useState<number>(offlineQueue.getState().pending);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(offlineQueue.getLastSyncedAt());
 
   const handleLogout = () => {
     logout();
     message.success('Uspješno ste se odjavili');
     navigate('/login');
   };
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    const handleQueue = (state: OfflineQueueState) => {
+      setPendingSync(state.pending);
+      setLastSyncedAt(state.lastSyncedAt);
+    };
+
+    offlineQueue.addListener(handleQueue);
+    setUserProfile(getStoredUserProfile());
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      offlineQueue.removeListener(handleQueue);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (userProfile?.location) {
+      setWarehouseName(userProfile.location);
+    }
+  }, [userProfile?.location]);
+
+  const displayRole = userProfile?.role
+    ? userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)
+    : 'Magacioner';
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -52,10 +89,13 @@ const SettingsPage: React.FC = () => {
       }}
     >
       <HeaderStatusBar
-        warehouseName="Transit Warehouse"
-        userName="Radnik"
-        userRole="Magacioner"
-        isOnline={navigator.onLine}
+        warehouseName={warehouseName}
+        userName={userProfile?.fullName ?? 'Radnik'}
+        userRole={displayRole}
+        userEmail={userProfile?.email}
+        isOnline={isOnline}
+        pendingSyncCount={pendingSync}
+        lastSyncedAt={lastSyncedAt}
         isSyncing={isSyncing}
         onLogout={handleLogout}
       />
@@ -260,4 +300,3 @@ const SettingsPage: React.FC = () => {
 };
 
 export default SettingsPage;
-

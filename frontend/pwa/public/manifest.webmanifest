@@ -1,9 +1,0 @@
-{
-  "name": "Magacin Worker",
-  "short_name": "WMS",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#10121a",
-  "theme_color": "#10121a",
-  "icons": []
-}

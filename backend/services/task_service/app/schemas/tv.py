@@ -20,6 +20,9 @@ class QueueEntry(BaseModel):
     status: str
     assigned_to: List[str]
     eta_minutes: float | None = None
+    total_items: int = 0
+    partial_items: int = 0
+    shortage_qty: float = 0.0
 
 
 class KpiSnapshot(BaseModel):
@@ -27,6 +30,8 @@ class KpiSnapshot(BaseModel):
     completed_percentage: float
     active_workers: int
     shift_ends_in_minutes: float
+    partial_items: int = 0
+    shortage_qty: float = 0.0
 
 
 class TvSnapshot(BaseModel):

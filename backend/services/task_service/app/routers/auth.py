@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_common.config import get_settings
 from app_common.db import get_db
@@ -30,9 +30,9 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-def get_current_user(
+async def get_current_user(
     token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> UserResponse:
     """Get current authenticated user from JWT token"""
     credentials_exception = HTTPException(
@@ -50,7 +50,7 @@ def get_current_user(
         raise credentials_exception
     
     user_service = UserService(db)
-    user = user_service.get_user_by_id(uuid.UUID(user_id))
+    user = await user_service.get_user_by_id(uuid.UUID(user_id))
     if user is None or not user.is_active:
         raise credentials_exception
     
@@ -88,14 +88,14 @@ def require_roles(required_roles: list[Role]):
 async def login(
     login_data: LoginRequest,
     request: Request,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> LoginResponse:
     """Authenticate user and return JWT token"""
     user_service = UserService(db)
     audit_service = AuditService(db)
     
     # Try to authenticate user
-    user = user_service.authenticate_user(login_data.email, login_data.password)
+    user = await user_service.authenticate_user(login_data.email, login_data.password)
     
     if not user:
         # Log failed login attempt
@@ -127,7 +127,7 @@ async def login(
 async def logout(
     current_user: UserResponse = Depends(get_current_user),
     request: Request = None,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Logout user (invalidate token)"""
     audit_service = AuditService(db)
@@ -147,7 +147,7 @@ async def get_profile(
 @router.post("/auth/reset-request")
 async def request_password_reset(
     reset_data: PasswordResetRequest,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Request password reset (send email)"""
     user_service = UserService(db)
@@ -165,7 +165,7 @@ async def request_password_reset(
 @router.post("/auth/reset-password")
 async def reset_password(
     reset_data: PasswordResetConfirm,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Reset password with token"""
     # TODO: Implement token validation and password reset
@@ -174,4 +174,3 @@ async def reset_password(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="Password reset not implemented yet"
     )
-

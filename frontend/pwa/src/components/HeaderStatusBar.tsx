@@ -17,8 +17,12 @@ interface HeaderStatusBarProps {
   warehouseName?: string;
   userName?: string;
   userRole?: string;
+  userEmail?: string;
   isOnline?: boolean;
   isSyncing?: boolean;
+  pendingSyncCount?: number;
+  lastSyncedAt?: number | null;
+  activeShiftLabel?: string;
   onLogout?: () => void;
 }
 
@@ -26,12 +30,15 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
   warehouseName = 'Transit Warehouse',
   userName = 'Worker',
   userRole = 'Magacioner',
+  userEmail,
   isOnline = true,
-  isSyncing = false,
+  isSyncing,
+  pendingSyncCount = 0,
+  lastSyncedAt = null,
+  activeShiftLabel = 'Dnevna smjena',
   onLogout,
 }) => {
   const [batteryLevel, setBatteryLevel] = useState<number>(100);
-  const [lastSync, setLastSync] = useState<string>('Just now');
 
   useEffect(() => {
     // Battery API (if available on device)
@@ -45,7 +52,34 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
     }
   }, []);
 
+  const formattedLastSync = lastSyncedAt
+    ? new Date(lastSyncedAt).toLocaleString('sr-Latn-ME', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    : 'Nema podataka';
+
+  const syncing = typeof isSyncing === 'boolean' ? isSyncing : pendingSyncCount > 0;
+
   const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'profile',
+      label: (
+        <div style={{ padding: '4px 0' }}>
+          <div style={{ color: theme.colors.text, fontSize: theme.typography.sizes.sm, fontWeight: 600 }}>
+            {userName}
+          </div>
+          {userEmail && (
+            <div style={{ color: theme.colors.textSecondary, fontSize: theme.typography.sizes.xs }}>
+              {userEmail}
+            </div>
+          )}
+        </div>
+      ),
+      disabled: true,
+    },
+    { type: 'divider' },
     {
       key: 'role',
       label: (
@@ -61,6 +95,20 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
       disabled: true,
     },
     {
+      key: 'shift',
+      label: (
+        <div style={{ padding: '4px 0' }}>
+          <div style={{ color: theme.colors.textSecondary, fontSize: theme.typography.sizes.xs }}>
+            Aktivna smjena
+          </div>
+          <div style={{ color: theme.colors.text, fontSize: theme.typography.sizes.sm }}>
+            {activeShiftLabel}
+          </div>
+        </div>
+      ),
+      disabled: true,
+    },
+    {
       key: 'sync',
       label: (
         <div style={{ padding: '4px 0' }}>
@@ -68,7 +116,7 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
             Posljednja sinhronizacija
           </div>
           <div style={{ color: theme.colors.text, fontSize: theme.typography.sizes.sm }}>
-            {lastSync}
+            {formattedLastSync}
           </div>
         </div>
       ),
@@ -150,6 +198,21 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
           >
             {userName}
           </span>
+          {userRole && (
+            <span
+              style={{
+                marginLeft: 6,
+                padding: '2px 6px',
+                borderRadius: 8,
+                background: '#2f2f2f',
+                color: theme.colors.textSecondary,
+                fontSize: theme.typography.sizes.xs,
+                textTransform: 'uppercase',
+              }}
+            >
+              {userRole}
+            </span>
+          )}
         </div>
       </Dropdown>
 
@@ -176,13 +239,49 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
         </Badge>
 
         {/* Sync Status */}
-        <SyncOutlined
-          spin={isSyncing}
-          style={{
-            fontSize: '16px',
-            color: isSyncing ? theme.colors.primary : theme.colors.textSecondary,
-          }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Badge
+            count={pendingSyncCount}
+            showZero={false}
+            color={syncing ? theme.colors.warning : theme.colors.success}
+          >
+            <SyncOutlined
+              spin={syncing}
+              style={{
+                fontSize: '16px',
+                color: syncing ? theme.colors.primary : theme.colors.textSecondary,
+              }}
+            />
+          </Badge>
+          <span
+            style={{
+              color: syncing ? theme.colors.warning : theme.colors.textSecondary,
+              fontSize: theme.typography.sizes.xs,
+              fontWeight: theme.typography.weights.medium,
+            }}
+          >
+            {syncing ? 'Pending' : 'Synced'}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <ClockCircleOutlined
+            style={{
+              fontSize: '16px',
+              color: theme.colors.textSecondary,
+            }}
+          />
+          <span
+            style={{
+              color: theme.colors.textSecondary,
+              fontSize: theme.typography.sizes.xs,
+              fontWeight: theme.typography.weights.medium,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {formattedLastSync}
+          </span>
+        </div>
 
         {/* Battery */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -208,4 +307,3 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
 };
 
 export default HeaderStatusBar;
-

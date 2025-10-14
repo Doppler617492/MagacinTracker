@@ -34,9 +34,13 @@ async def on_startup() -> None:
     # Initialize stream manager
     await stream_manager.initialize()
     
-    # Start background processing tasks
-    asyncio.create_task(stream_manager.event_processing_loop())
-    asyncio.create_task(stream_manager.ai_decision_loop())
+    # Start background processing tasks and keep references for clean shutdown
+    stream_manager.is_running = True
+    tasks = [
+        asyncio.create_task(stream_manager.event_processing_loop(), name="event_processing_loop"),
+        asyncio.create_task(stream_manager.ai_decision_loop(), name="ai_decision_loop"),
+    ]
+    app.state.background_tasks = tasks
     
     logger.info("Stream processor service initialized successfully")
 
@@ -47,6 +51,15 @@ async def on_shutdown() -> None:
     logger.info("stream-processor.shutdown")
     
     # Stop background processing
+    stream_manager.is_running = False
+    tasks = getattr(app.state, "background_tasks", [])
+    for t in tasks:
+        t.cancel()
+    for t in tasks:
+        try:
+            await t
+        except asyncio.CancelledError:
+            pass
     await stream_manager.shutdown()
     
     logger.info("Stream processor service shutdown complete")

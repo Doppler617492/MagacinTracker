@@ -1,19 +1,57 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Empty, Button } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import HeaderStatusBar from '../components/HeaderStatusBar';
 import BottomNav from '../components/BottomNav';
 import { theme } from '../theme';
-import { logout } from '../api';
+import { logout, getStoredUserProfile, StoredUserProfile } from '../api';
+import { offlineQueue } from '../lib/offlineQueue';
+import type { OfflineQueueState } from '../lib/offlineQueue';
 
 const ReportsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [userProfile, setUserProfile] = useState<StoredUserProfile | null>(getStoredUserProfile());
+  const [warehouseName, setWarehouseName] = useState<string>(getStoredUserProfile()?.location ?? 'Tranzitno skladište');
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [pendingSync, setPendingSync] = useState<number>(offlineQueue.getState().pending);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(offlineQueue.getLastSyncedAt());
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    const handleQueue = (state: OfflineQueueState) => {
+      setPendingSync(state.pending);
+      setLastSyncedAt(state.lastSyncedAt);
+    };
+
+    offlineQueue.addListener(handleQueue);
+    setUserProfile(getStoredUserProfile());
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      offlineQueue.removeListener(handleQueue);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (userProfile?.location) {
+      setWarehouseName(userProfile.location);
+    }
+  }, [userProfile?.location]);
+
+  const displayRole = userProfile?.role
+    ? userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)
+    : 'Magacioner';
 
   return (
     <div
@@ -26,11 +64,13 @@ const ReportsPage: React.FC = () => {
       }}
     >
       <HeaderStatusBar
-        warehouseName="Transit Warehouse"
-        userName="Radnik"
-        userRole="Magacioner"
-        isOnline={navigator.onLine}
-        isSyncing={false}
+        warehouseName={warehouseName}
+        userName={userProfile?.fullName ?? 'Radnik'}
+        userRole={displayRole}
+        userEmail={userProfile?.email}
+        isOnline={isOnline}
+        pendingSyncCount={pendingSync}
+        lastSyncedAt={lastSyncedAt}
         onLogout={handleLogout}
       />
 
@@ -86,4 +126,3 @@ const ReportsPage: React.FC = () => {
 };
 
 export default ReportsPage;
-

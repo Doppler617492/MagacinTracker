@@ -11,11 +11,16 @@ from fastapi import UploadFile
 from app_common.logging import get_logger
 
 from ..config import settings
-from ..parsers import parse_csv, parse_excel
+from ..parsers import parse_csv, parse_excel, parse_pdf
 
 logger = get_logger(__name__)
 
-SUPPORTED_EXTENSIONS = {".csv": parse_csv, ".xlsx": parse_excel, ".xlsm": parse_excel}
+SUPPORTED_EXTENSIONS = {
+    ".csv": parse_csv,
+    ".xlsx": parse_excel,
+    ".xlsm": parse_excel,
+    ".pdf": parse_pdf,
+}
 
 
 class ImportProcessor:

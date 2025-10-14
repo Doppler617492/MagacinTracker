@@ -54,7 +54,7 @@ async def list_users(
     
     if role_filter:
         where_conditions.append("role = :role_filter")
-        params["role_filter"] = role_filter
+        params["role_filter"] = role_filter.upper()  # Convert to uppercase for DB enum
     
     if active_filter is not None:
         where_conditions.append("is_active = :active_filter")
@@ -131,7 +131,7 @@ async def create_user(
             detail="User with this email already exists"
         )
     
-    # Validate role (accept both uppercase and lowercase, convert to lowercase)
+    # Validate role (accept both uppercase and lowercase, convert to uppercase for DB enum)
     role_lower = user_data.role.lower()
     valid_roles = ["magacioner", "sef", "komercijalista", "menadzer", "admin"]
     if role_lower not in valid_roles:
@@ -139,6 +139,9 @@ async def create_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}"
         )
+    
+    # Convert to uppercase for database enum
+    role_upper = user_data.role.upper()
     
     # Hash password
     hashed_password = get_password_hash(user_data.password)
@@ -160,7 +163,7 @@ async def create_user(
             "password_hash": hashed_password,
             "first_name": user_data.first_name,
             "last_name": user_data.last_name,
-            "role": role_lower,  # Use lowercase role
+            "role": role_upper,  # Use uppercase role for DB enum
             "is_active": is_active,
             "created_at": now,
             "updated_at": now,
@@ -174,7 +177,7 @@ async def create_user(
         "email": user_data.email,
         "first_name": user_data.first_name,
         "last_name": user_data.last_name,
-        "role": role_lower,  # Return lowercase role
+        "role": role_upper,  # Return uppercase role to match DB
         "is_active": is_active,
         "created_at": now.isoformat(),
         "updated_at": now.isoformat(),

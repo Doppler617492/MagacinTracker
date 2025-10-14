@@ -22,6 +22,7 @@ from ..models import (
 )
 from ..models.enums import (
     AuditAction,
+    DiscrepancyStatus,
     ScanResult,
     TrebovanjeItemStatus,
     TrebovanjeStatus,
@@ -436,34 +437,113 @@ async def list_worker_tasks(session: AsyncSession, user_id: UUID) -> list[Worker
         select(Zaduznica)
         .options(
             joinedload(Zaduznica.stavke),
-            joinedload(Zaduznica.trebovanje).joinedload(Trebovanje.radnja),
+            joinedload(Zaduznica.trebovanje)
+            .joinedload(Trebovanje.radnja),
+            joinedload(Zaduznica.trebovanje)
+            .joinedload(Trebovanje.magacin),
+            joinedload(Zaduznica.trebovanje)
+            .joinedload(Trebovanje.stavke),
         )
         .where(Zaduznica.magacioner_id == user_id)
         .order_by(Zaduznica.created_at.desc())
     )
 
+    zaduznice = list(rows.scalars().unique())
+    if not zaduznice:
+        return []
+
+    creator_ids = {
+        zaduznica.trebovanje.created_by_id
+        for zaduznica in zaduznice
+        if zaduznica.trebovanje and zaduznica.trebovanje.created_by_id
+    }
+
+    assigned_users: dict[UUID, str] = {}
+    if creator_ids:
+        result = await session.execute(
+            select(UserAccount.id, UserAccount.first_name, UserAccount.last_name).where(
+                UserAccount.id.in_(creator_ids)
+            )
+        )
+        assigned_users = {
+            row[0]: f"{row[1]} {row[2]}".strip() for row in result.all()
+        }
+
     tasks: list[WorkerTask] = []
-    for zaduznica in rows.scalars().unique():
-        total = sum(_to_decimal(item.trazena_kolicina) for item in zaduznica.stavke)
-        done = sum(_to_decimal(item.obradjena_kolicina) for item in zaduznica.stavke)
-        progress = float((done / total * Decimal("100")) if total else Decimal(0))
+    for zaduznica in zaduznice:
+        trebovanje = zaduznica.trebovanje
         dokument = (
-            zaduznica.trebovanje.dokument_broj if zaduznica.trebovanje else str(zaduznica.trebovanje_id)
+            trebovanje.dokument_broj if trebovanje else str(zaduznica.trebovanje_id)
         )
         lokacija = (
-            zaduznica.trebovanje.radnja.naziv
-            if zaduznica.trebovanje and zaduznica.trebovanje.radnja
+            trebovanje.radnja.naziv
+            if trebovanje and trebovanje.radnja
             else str(zaduznica.trebovanje_id)
         )
+
+        trebovanje_stavke_map = {}
+        if trebovanje and trebovanje.stavke:
+            trebovanje_stavke_map = {stavka.id: stavka for stavka in trebovanje.stavke}
+
+        total_requested = Decimal("0")
+        total_picked = Decimal("0")
+        partial_items = 0
+        shortage_qty = Decimal("0")
+        completed_items = 0
+
+        for item in zaduznica.stavke:
+            total_requested += _to_decimal(item.trazena_kolicina)
+            treb_stavka = trebovanje_stavke_map.get(item.trebovanje_stavka_id)
+            if not treb_stavka:
+                total_picked += _to_decimal(item.obradjena_kolicina)
+                continue
+
+            picked_qty = _to_decimal(treb_stavka.picked_qty)
+            total_picked += picked_qty
+
+            missing_qty = _to_decimal(treb_stavka.missing_qty)
+            discrepancy_status = treb_stavka.discrepancy_status
+
+            if (
+                discrepancy_status
+                and discrepancy_status != DiscrepancyStatus.none
+                and missing_qty > 0
+            ):
+                partial_items += 1
+                shortage_qty += missing_qty
+
+            if picked_qty >= _to_decimal(item.trazena_kolicina) or (
+                discrepancy_status and discrepancy_status != DiscrepancyStatus.none
+            ):
+                completed_items += 1
+
+        progress = float(
+            (total_picked / total_requested * Decimal("100"))
+            if total_requested
+            else Decimal(0)
+        )
+
         tasks.append(
             WorkerTask(
                 id=zaduznica.id,
                 dokument=dokument,
+                dokument_broj=dokument,
                 lokacija=lokacija,
+                lokacija_naziv=lokacija,
                 stavke_total=len(zaduznica.stavke),
+                stavke_completed=completed_items,
+                partial_items=partial_items,
+                shortage_qty=float(shortage_qty),
+                assigned_by_id=trebovanje.created_by_id if trebovanje else None,
+                assigned_by_name=assigned_users.get(
+                    trebovanje.created_by_id
+                )
+                if trebovanje and trebovanje.created_by_id
+                else None,
                 progress=progress,
                 status=zaduznica.status,
                 due_at=zaduznica.rok,
+                trebovanje_id=zaduznica.trebovanje_id,
             )
         )
     return tasks
@@ -474,7 +554,12 @@ async def worker_task_detail(session: AsyncSession, zaduznica_id: UUID, user_id:
         select(Zaduznica)
         .options(
             joinedload(Zaduznica.stavke),
-            joinedload(Zaduznica.trebovanje).joinedload(Trebovanje.radnja),
+            joinedload(Zaduznica.trebovanje)
+            .joinedload(Trebovanje.radnja),
+            joinedload(Zaduznica.trebovanje)
+            .joinedload(Trebovanje.magacin),
+            joinedload(Zaduznica.trebovanje)
+            .joinedload(Trebovanje.stavke),
         )
         .where(Zaduznica.id == zaduznica_id, Zaduznica.magacioner_id == user_id)
     )
@@ -491,21 +576,57 @@ async def worker_task_detail(session: AsyncSession, zaduznica_id: UUID, user_id:
         for ts in trebovanje_stavke_result.scalars():
             trebovanje_stavke[ts.id] = ts
 
-    items = [
-        WorkerTaskItem(
-            id=item.id,
-            naziv=trebovanje_stavke.get(item.trebovanje_stavka_id, TrebovanjeStavka()).naziv if trebovanje_stavke.get(item.trebovanje_stavka_id) else "",
-            trazena_kolicina=float(item.trazena_kolicina),
-            obradjena_kolicina=float(item.obradjena_kolicina),
-            status=item.status.value,
-            needs_barcode=trebovanje_stavke.get(item.trebovanje_stavka_id, TrebovanjeStavka()).needs_barcode if trebovanje_stavke.get(item.trebovanje_stavka_id) else False,
-        )
-        for item in zaduznica.stavke
-    ]
+    items = []
+    for item in zaduznica.stavke:
+        trebovanje_stavka = trebovanje_stavke.get(item.trebovanje_stavka_id)
+        if trebovanje_stavka:
+            items.append(
+                WorkerTaskItem(
+                    id=trebovanje_stavka.id,
+                    naziv=trebovanje_stavka.naziv,
+                    artikl_sifra=trebovanje_stavka.artikl_sifra,
+                    kolicina_trazena=float(item.trazena_kolicina),
+                    picked_qty=float(trebovanje_stavka.picked_qty),
+                    missing_qty=float(trebovanje_stavka.missing_qty),
+                    discrepancy_status=trebovanje_stavka.discrepancy_status.value,
+                    discrepancy_reason=trebovanje_stavka.discrepancy_reason,
+                    needs_barcode=trebovanje_stavka.needs_barcode,
+                    barkod=trebovanje_stavka.barkod,
+                )
+            )
+        else:
+            items.append(
+                WorkerTaskItem(
+                    id=item.id,
+                    naziv="",
+                    artikl_sifra="",
+                    kolicina_trazena=float(item.trazena_kolicina),
+                    picked_qty=float(item.obradjena_kolicina or 0),
+                    missing_qty=float(item.trazena_kolicina),
+                    discrepancy_status="none",
+                    discrepancy_reason=None,
+                    needs_barcode=False,
+                    barkod=None,
+                )
+            )
 
     total = sum(_to_decimal(item.trazena_kolicina) for item in zaduznica.stavke)
     done = sum(_to_decimal(item.obradjena_kolicina) for item in zaduznica.stavke)
     progress = float((done / total * Decimal("100")) if total else Decimal(0))
+
+    shortage_items = [
+        item for item in items if item.discrepancy_status != DiscrepancyStatus.none.value and item.missing_qty > 0
+    ]
+    partial_count = len(shortage_items)
+    shortage_qty = sum(item.missing_qty for item in shortage_items)
+    
+    # Calculate completed items based on trebovanje stavke status
+    stavke_completed = sum(
+        1 for item in zaduznica.stavke 
+        if trebovanje_stavke.get(item.trebovanje_stavka_id) and 
+           (float(trebovanje_stavke.get(item.trebovanje_stavka_id).picked_qty) >= float(item.trazena_kolicina) or 
+            trebovanje_stavke.get(item.trebovanje_stavka_id).discrepancy_status.value != "none")
+    )
 
     dokument = (
         zaduznica.trebovanje.dokument_broj if zaduznica.trebovanje else str(zaduznica.trebovanje_id)
@@ -516,14 +637,29 @@ async def worker_task_detail(session: AsyncSession, zaduznica_id: UUID, user_id:
         else str(zaduznica.trebovanje_id)
     )
 
+    assigned_by_id = zaduznica.trebovanje.created_by_id if zaduznica.trebovanje else None
+    assigned_by_name = None
+    if assigned_by_id:
+        assigned_user = await session.get(UserAccount, assigned_by_id)
+        if assigned_user:
+            assigned_by_name = assigned_user.full_name
+
     return WorkerTaskDetail(
         id=zaduznica.id,
         dokument=dokument,
+        dokument_broj=dokument,
         lokacija=lokacija,
+        lokacija_naziv=lokacija,
         stavke_total=len(items),
+        stavke_completed=stavke_completed,
+        partial_items=partial_count,
+        shortage_qty=float(shortage_qty),
+        assigned_by_id=assigned_by_id,
+        assigned_by_name=assigned_by_name,
         progress=progress,
         status=zaduznica.status,
         due_at=zaduznica.rok,
+        trebovanje_id=zaduznica.trebovanje_id,
         stavke=items,
     )
 

@@ -4,11 +4,11 @@ import {
   FileTextOutlined,
   EnvironmentOutlined,
   UserOutlined,
-  CheckCircleOutlined,
-  PlayCircleOutlined,
+  WarningOutlined,
   RobotOutlined,
+  ArrowRightOutlined,
 } from '@ant-design/icons';
-import { Progress } from 'antd';
+import { Progress, Tag } from 'antd';
 import { theme } from '../theme';
 
 interface TaskCardProps {
@@ -16,9 +16,12 @@ interface TaskCardProps {
   location: string;
   totalItems: number;
   completedItems: number;
+  partialItems?: number; // Items closed with shortage
+  shortageQty?: number;
   dueTime?: string;
   assignedBy?: string;
   status: 'new' | 'in_progress' | 'completed';
+  progress?: number;
   aiNote?: string;
   estimatedTime?: number; // in minutes
   onClick?: () => void;
@@ -29,243 +32,320 @@ const TaskCard: React.FC<TaskCardProps> = ({
   location,
   totalItems,
   completedItems,
+  partialItems = 0,
+  shortageQty = 0,
   dueTime,
   assignedBy,
   status,
+  progress,
   aiNote,
   estimatedTime,
   onClick,
 }) => {
-  const progressPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+  const computedProgress =
+    typeof progress === 'number'
+      ? Math.round(progress)
+      : totalItems > 0
+        ? Math.round((completedItems / totalItems) * 100)
+        : 0;
 
-  const getButtonConfig = () => {
-    switch (status) {
-      case 'completed':
-        return {
-          text: 'Završeno',
-          color: theme.colors.neutral,
-          textColor: theme.colors.textSecondary,
-          icon: <CheckCircleOutlined />,
-        };
-      case 'in_progress':
-        return {
-          text: 'Nastavi',
-          color: theme.colors.success,
-          textColor: '#ffffff',
-          icon: <PlayCircleOutlined />,
-        };
-      default:
-        return {
-          text: 'Otvori zadatak',
-          color: theme.colors.primary,
-          textColor: '#ffffff',
-          icon: <PlayCircleOutlined />,
-        };
+  const hasPartial = partialItems > 0;
+  const shortageDisplay = shortageQty > 0 ? `${Math.round(shortageQty)} kom` : '-';
+
+  const statusMeta: Record<
+    TaskCardProps['status'],
+    { label: string; color: string; background: string }
+  > = {
+    new: {
+      label: 'Novo',
+      color: '#3B82F6',
+      background: 'rgba(59, 130, 246, 0.12)',
+    },
+    in_progress: {
+      label: 'U toku',
+      color: theme.colors.accent,
+      background: 'rgba(0, 200, 150, 0.12)',
+    },
+    completed: {
+      label: 'Završeno',
+      color: theme.colors.success,
+      background: 'rgba(0, 200, 150, 0.12)',
+    },
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
     }
   };
 
-  const buttonConfig = getButtonConfig();
-
   return (
     <div
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : -1}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
       style={{
         background: theme.colors.cardBackground,
         border: `1px solid ${theme.colors.border}`,
-        borderRadius: theme.borderRadius.lg,
+        borderRadius: theme.borderRadius.xl,
         padding: theme.spacing.lg,
-        boxShadow: theme.shadows.md,
+        boxShadow: theme.shadows.lg,
         display: 'flex',
-        flexDirection: 'column',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.35)';
+        e.currentTarget.style.borderColor = theme.colors.accent;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = theme.shadows.lg;
+        e.currentTarget.style.borderColor = theme.colors.border;
       }}
     >
-      {/* Header: Document Number */}
       <div
         style={{
+          width: '96px',
+          minWidth: '96px',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          gap: theme.spacing.sm,
-          paddingBottom: theme.spacing.sm,
-          borderBottom: `1px solid ${theme.colors.border}`,
+          gap: theme.spacing.md,
         }}
       >
-        <FileTextOutlined style={{ fontSize: '18px', color: theme.colors.accent }} />
-        <span
+        <Tag
+          color={statusMeta[status].background}
           style={{
-            color: theme.colors.text,
-            fontSize: theme.typography.sizes.base,
+            color: statusMeta[status].color,
+            borderColor: 'transparent',
             fontWeight: theme.typography.weights.semibold,
+            fontSize: theme.typography.sizes.xs,
+            padding: `${parseInt(theme.spacing.xs, 10) / 2}px ${parseInt(theme.spacing.sm, 10)}px`,
+            borderRadius: theme.borderRadius.md,
           }}
         >
-          {documentNumber}
-        </span>
-      </div>
-
-      {/* Task Details Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr',
-          gap: theme.spacing.sm,
-        }}
-      >
-        {/* Location */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-          <EnvironmentOutlined style={{ fontSize: '14px', color: theme.colors.textSecondary }} />
-          <span style={{ color: theme.colors.textSecondary, fontSize: theme.typography.sizes.sm }}>
-            Lokacija:
-          </span>
-          <span style={{ color: theme.colors.text, fontSize: theme.typography.sizes.sm, fontWeight: 500 }}>
-            {location}
-          </span>
-        </div>
-
-        {/* Items */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-          <CheckCircleOutlined style={{ fontSize: '14px', color: theme.colors.textSecondary }} />
-          <span style={{ color: theme.colors.textSecondary, fontSize: theme.typography.sizes.sm }}>
-            Stavke:
-          </span>
-          <span style={{ color: theme.colors.text, fontSize: theme.typography.sizes.sm, fontWeight: 500 }}>
-            {completedItems} / {totalItems}
-          </span>
-        </div>
-
-        {/* Due Time */}
-        {dueTime && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-            <ClockCircleOutlined style={{ fontSize: '14px', color: theme.colors.textSecondary }} />
-            <span style={{ color: theme.colors.textSecondary, fontSize: theme.typography.sizes.sm }}>
-              Rok:
-            </span>
-            <span style={{ color: theme.colors.text, fontSize: theme.typography.sizes.sm, fontWeight: 500 }}>
-              {dueTime}
-            </span>
-          </div>
-        )}
-
-        {/* Assigned By */}
-        {assignedBy && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
-            <UserOutlined style={{ fontSize: '14px', color: theme.colors.textSecondary }} />
-            <span style={{ color: theme.colors.textSecondary, fontSize: theme.typography.sizes.sm }}>
-              Dodijelio:
-            </span>
-            <span style={{ color: theme.colors.text, fontSize: theme.typography.sizes.sm, fontWeight: 500 }}>
-              {assignedBy}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Progress Bar */}
-      <div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginBottom: theme.spacing.xs,
-          }}
-        >
-          <span style={{ color: theme.colors.textSecondary, fontSize: theme.typography.sizes.xs }}>
-            Napredak
-          </span>
-          <span
+          {statusMeta[status].label}
+        </Tag>
+        <Progress
+          type="circle"
+          percent={Math.min(computedProgress, 100)}
+          width={70}
+          strokeColor={hasPartial ? theme.colors.warning : theme.colors.accent}
+          trailColor={theme.colors.neutral}
+          format={(percent) => `${percent}%`}
+        />
+        {hasPartial && (
+          <div
             style={{
-              color: theme.colors.text,
               fontSize: theme.typography.sizes.xs,
-              fontWeight: theme.typography.weights.semibold,
+              fontWeight: theme.typography.weights.medium,
+              color: theme.colors.warning,
+              textTransform: 'uppercase',
             }}
           >
-            {progressPercent}%
-          </span>
-        </div>
-        <Progress
-          percent={progressPercent}
-          strokeColor={theme.colors.accent}
-          trailColor={theme.colors.neutral}
-          showInfo={false}
-          strokeWidth={8}
-        />
+            {partialItems} djel.
+          </div>
+        )}
       </div>
 
-      {/* AI Note (if available) */}
-      {aiNote && (
-        <div
-          style={{
-            background: theme.colors.background,
-            border: `1px solid ${theme.colors.border}`,
-            borderLeft: `3px solid ${theme.colors.accent}`,
-            borderRadius: theme.borderRadius.md,
-            padding: theme.spacing.md,
-            display: 'flex',
-            gap: theme.spacing.sm,
-            alignItems: 'flex-start',
-          }}
-        >
-          <RobotOutlined style={{ fontSize: '14px', color: theme.colors.accent, marginTop: '2px' }} />
-          <div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: theme.spacing.md }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs }}>
             <div
               style={{
-                color: theme.colors.accent,
-                fontSize: theme.typography.sizes.xs,
+                display: 'flex',
+                alignItems: 'center',
+                gap: theme.spacing.sm,
+                color: theme.colors.text,
+                fontSize: theme.typography.sizes.lg,
                 fontWeight: theme.typography.weights.semibold,
-                marginBottom: '2px',
+                letterSpacing: '0.4px',
               }}
             >
-              AI Napomena
+              <FileTextOutlined style={{ color: theme.colors.accent }} />
+              {documentNumber}
             </div>
             <div
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: theme.spacing.sm,
                 color: theme.colors.textSecondary,
-                fontSize: theme.typography.sizes.xs,
-                lineHeight: '1.4',
+                fontSize: theme.typography.sizes.sm,
               }}
             >
-              {aiNote}
-              {estimatedTime && ` — Procijenjeno ${estimatedTime} min`}
+              <EnvironmentOutlined />
+              <span style={{ color: theme.colors.text }}>{location}</span>
             </div>
+            {assignedBy && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: theme.spacing.sm,
+                  color: theme.colors.textSecondary,
+                  fontSize: theme.typography.sizes.sm,
+                }}
+              >
+                <UserOutlined />
+                <span>Dodijelio: </span>
+                <span style={{ color: theme.colors.text, fontWeight: theme.typography.weights.medium }}>
+                  {assignedBy}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              gap: theme.spacing.sm,
+            }}
+          >
+            {dueTime && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: theme.spacing.xs,
+                  color: theme.colors.textSecondary,
+                  fontSize: theme.typography.sizes.sm,
+                }}
+              >
+                <ClockCircleOutlined />
+                <span>{dueTime}</span>
+              </div>
+            )}
+            {estimatedTime && (
+              <div
+                style={{
+                  color: theme.colors.textSecondary,
+                  fontSize: theme.typography.sizes.xs,
+                }}
+              >
+                ETA: ~{Math.round(estimatedTime)} min
+              </div>
+            )}
+            {hasPartial && (
+              <Tag color="warning" style={{ margin: 0, borderRadius: theme.borderRadius.sm }}>
+                <WarningOutlined /> Djelimično
+              </Tag>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Action Button */}
-      <button
-        onClick={onClick}
-        disabled={status === 'completed'}
-        style={{
-          background: buttonConfig.color,
-          color: buttonConfig.textColor,
-          border: 'none',
-          borderRadius: theme.borderRadius.md,
-          padding: `${theme.spacing.md} ${theme.spacing.lg}`,
-          fontSize: theme.typography.sizes.base,
-          fontWeight: theme.typography.weights.semibold,
-          cursor: status === 'completed' ? 'not-allowed' : 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: theme.spacing.sm,
-          transition: 'all 0.2s',
-          opacity: status === 'completed' ? 0.6 : 1,
-        }}
-        onMouseEnter={(e) => {
-          if (status !== 'completed') {
-            e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = theme.shadows.md;
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
-      >
-        {buttonConfig.icon}
-        {buttonConfig.text}
-      </button>
+        <div
+          style={{
+            display: 'grid',
+            gap: theme.spacing.sm,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+            background: 'rgba(17, 24, 39, 0.6)',
+            padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+            borderRadius: theme.borderRadius.lg,
+            border: `1px solid ${theme.colors.border}`,
+          }}
+        >
+          <Metric label="Stavki ukupno" value={totalItems} />
+          <Metric label="Zatvoreno" value={completedItems} />
+          <Metric label="Razlika" value={shortageDisplay} highlight={hasPartial} />
+        </div>
+
+        {aiNote && (
+          <div
+            style={{
+              display: 'flex',
+              gap: theme.spacing.sm,
+              padding: theme.spacing.sm,
+              background: 'rgba(0, 122, 204, 0.12)',
+              borderRadius: theme.borderRadius.md,
+              color: theme.colors.text,
+              fontSize: theme.typography.sizes.sm,
+            }}
+          >
+            <RobotOutlined style={{ color: theme.colors.accent, fontSize: '16px' }} />
+            <div>{aiNote}</div>
+          </div>
+        )}
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginTop: theme.spacing.sm,
+          }}
+        >
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onClick?.();
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: theme.spacing.sm,
+              background: 'transparent',
+              border: `1px solid ${theme.colors.accent}`,
+              color: theme.colors.accent,
+              padding: `${theme.spacing.sm} ${theme.spacing.lg}`,
+              borderRadius: theme.borderRadius.md,
+              fontWeight: theme.typography.weights.semibold,
+              fontSize: theme.typography.sizes.sm,
+              cursor: 'pointer',
+              transition: 'all 0.18s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(0, 200, 150, 0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            Otvori zadatak
+            <ArrowRightOutlined />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default TaskCard;
+interface MetricProps {
+  label: string;
+  value: string | number;
+  highlight?: boolean;
+}
 
+const Metric: React.FC<MetricProps> = ({ label, value, highlight = false }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs }}>
+    <span
+      style={{
+        color: theme.colors.textSecondary,
+        fontSize: theme.typography.sizes.xs,
+        textTransform: 'uppercase',
+        letterSpacing: '0.6px',
+      }}
+    >
+      {label}
+    </span>
+    <span
+      style={{
+        color: highlight ? theme.colors.warning : theme.colors.text,
+        fontSize: theme.typography.sizes.base,
+        fontWeight: theme.typography.weights.semibold,
+      }}
+    >
+      {value}
+    </span>
+  </div>
+);
+
+export default TaskCard;

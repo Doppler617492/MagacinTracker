@@ -9,11 +9,11 @@ from pydantic import BaseModel, EmailStr, Field, validator
 from enum import Enum
 
 class Role(str, Enum):
-    ADMIN = "menadzer"  # Using existing enum value as admin
-    MENADZER = "menadzer"
-    SEF = "sef"
-    KOMERCIJALISTA = "komercijalista"
-    MAGACIONER = "magacioner"
+    ADMIN = "ADMIN"
+    MENADZER = "MENADZER"
+    SEF = "SEF"
+    KOMERCIJALISTA = "KOMERCIJALISTA"
+    MAGACIONER = "MAGACIONER"
 
 
 class UserBase(BaseModel):

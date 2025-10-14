@@ -81,10 +81,11 @@ const ImportPage = () => {
     beforeUpload: (file) => {
       const isValidType = file.type === 'text/csv' || 
                          file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-                         file.type === 'application/vnd.ms-excel.sheet.macroEnabled.12';
+                         file.type === 'application/vnd.ms-excel.sheet.macroEnabled.12' ||
+                         file.type === 'application/pdf';
       
       if (!isValidType) {
-        message.error('Podržani su samo CSV i Excel fajlovi (.csv, .xlsx, .xlsm)');
+        message.error('Podržani su CSV, Excel i PDF fajlovi (.csv, .xlsx, .xlsm, .pdf)');
         return false;
       }
 
@@ -165,7 +166,7 @@ const ImportPage = () => {
           </p>
           <p className="ant-upload-text">Kliknite ili prevucite fajl ovde</p>
           <p className="ant-upload-hint">
-            Podržani su CSV i Excel fajlovi (.csv, .xlsx, .xlsm). Maksimalna veličina: 10MB
+            Podržani su CSV, Excel i PDF fajlovi (.csv, .xlsx, .xlsm, .pdf). Maksimalna veličina: 10MB
           </p>
         </Dragger>
 
