@@ -1,0 +1,314 @@
+version: '3.8'
+
+# Cungu WMS Cloud - Production Deployment Configuration
+# Sprint-11 Commercial SaaS Ready
+
+services:
+  # PostgreSQL 16 - Multi-tenant database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cunguwms-postgres
+    environment:
+      POSTGRES_DB: cunguwms
+      POSTGRES_USER: ${POSTGRES_USER:-cunguwms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_MAX_CONNECTIONS: 200
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "5432:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cunguwms}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cunguwms-network
+
+  # Redis 7 - Cache + Pub/Sub + Queue
+  redis:
+    image: redis:7-alpine
+    container_name: cunguwms-redis
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cunguwms-network
+
+  # API Gateway (main entry point)
+  api-gateway:
+    build:
+      context: ./backend/services/api_gateway
+      dockerfile: Dockerfile
+    container_name: cunguwms-gateway
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cunguwms}:${POSTGRES_PASSWORD}@postgres:5432/cunguwms
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://*.cunguwms.com}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8123:8000"
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cunguwms-network
+
+  # Task Service (warehouse operations)
+  task-service:
+    build:
+      context: ./backend/services/task_service
+      dockerfile: Dockerfile
+    container_name: cunguwms-tasks
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cunguwms}:${POSTGRES_PASSWORD}@postgres:5432/cunguwms
+      REDIS_URL: redis://redis:6379/1
+      MQTT_BROKER: mqtt://mqtt:1883
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # Catalog Service (articles + locations)
+  catalog-service:
+    build:
+      context: ./backend/services/catalog_service
+      dockerfile: Dockerfile
+    container_name: cunguwms-catalog
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cunguwms}:${POSTGRES_PASSWORD}@postgres:5432/cunguwms
+      REDIS_URL: redis://redis:6379/2
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # Import Service (Pantheon integration)
+  import-service:
+    build:
+      context: ./backend/services/import_service
+      dockerfile: Dockerfile
+    container_name: cunguwms-import
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cunguwms}:${POSTGRES_PASSWORD}@postgres:5432/cunguwms
+      REDIS_URL: redis://redis:6379/3
+      PANTHEON_API_URL: ${PANTHEON_API_URL}
+      PANTHEON_API_KEY: ${PANTHEON_API_KEY}
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # Realtime Worker (WebSocket + AR sync)
+  realtime-worker:
+    build:
+      context: ./backend/services/realtime_worker
+      dockerfile: Dockerfile
+    container_name: cunguwms-realtime
+    environment:
+      REDIS_URL: redis://redis:6379/4
+      MQTT_BROKER: mqtt://mqtt:1883
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # Vision Service (AI quality control)
+  vision-service:
+    build:
+      context: ./backend/services/vision_service
+      dockerfile: Dockerfile
+    container_name: cunguwms-vision
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cunguwms}:${POSTGRES_PASSWORD}@postgres:5432/cunguwms
+      REDIS_URL: redis://redis:6379/5
+      MODEL_PATH: /models
+    volumes:
+      - ./backend/services/vision_service/models:/models
+      - vision_cache:/cache
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # Scheduler (batch jobs + cron)
+  scheduler:
+    build:
+      context: ./backend/services/scheduler
+      dockerfile: Dockerfile
+    container_name: cunguwms-scheduler
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cunguwms}:${POSTGRES_PASSWORD}@postgres:5432/cunguwms
+      REDIS_URL: redis://redis:6379/6
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # Billing Service (Stripe + invoicing)
+  billing-service:
+    build:
+      context: ./backend/services/billing_service
+      dockerfile: Dockerfile
+    container_name: cunguwms-billing
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cunguwms}:${POSTGRES_PASSWORD}@postgres:5432/cunguwms
+      REDIS_URL: redis://redis:6379/7
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # MQTT Broker (IoT devices)
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: cunguwms-mqtt
+    volumes:
+      - ./monitoring/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mqtt_data:/mosquitto/data
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # MinIO (S3-compatible storage)
+  minio:
+    image: minio/minio:latest
+    container_name: cunguwms-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - cunguwms-network
+
+  # Prometheus (metrics)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cunguwms-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d'
+    ports:
+      - "9090:9090"
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # Grafana (dashboards)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cunguwms-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    volumes:
+      - ./monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./monitoring/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # Alertmanager (notifications)
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: cunguwms-alertmanager
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    ports:
+      - "9093:9093"
+    restart: always
+    networks:
+      - cunguwms-network
+
+  # Nginx (reverse proxy + SSL)
+  nginx:
+    image: nginx:alpine
+    container_name: cunguwms-nginx
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl
+      - ./frontend/pwa/build:/usr/share/nginx/html/pwa
+      - ./frontend/admin/build:/usr/share/nginx/html/admin
+      - ./frontend/tv/build:/usr/share/nginx/html/tv
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api-gateway
+    restart: always
+    networks:
+      - cunguwms-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  mqtt_data:
+  prometheus_data:
+  grafana_data:
+  vision_cache:
+
+networks:
+  cunguwms-network:
+    driver: bridge
+

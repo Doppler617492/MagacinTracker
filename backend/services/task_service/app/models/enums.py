@@ -187,6 +187,25 @@ class AuditAction(str, Enum):
     ENERGY_OPTIMIZED = "ENERGY_OPTIMIZED"
     TENANT_CREATED = "TENANT_CREATED"
     TENANT_SWITCHED = "TENANT_SWITCHED"
+    
+    # Sprint-11 COMMERCIAL actions (SaaS Billing, Onboarding, Support)
+    TENANT_SIGNUP = "TENANT_SIGNUP"
+    TENANT_ACTIVATED = "TENANT_ACTIVATED"
+    SUBSCRIPTION_CREATED = "SUBSCRIPTION_CREATED"
+    SUBSCRIPTION_UPGRADED = "SUBSCRIPTION_UPGRADED"
+    SUBSCRIPTION_DOWNGRADED = "SUBSCRIPTION_DOWNGRADED"
+    SUBSCRIPTION_CANCELLED = "SUBSCRIPTION_CANCELLED"
+    PAYMENT_PROCESSED = "PAYMENT_PROCESSED"
+    PAYMENT_FAILED = "PAYMENT_FAILED"
+    INVOICE_GENERATED = "INVOICE_GENERATED"
+    INVOICE_PAID = "INVOICE_PAID"
+    SUPPORT_TICKET_CREATED = "SUPPORT_TICKET_CREATED"
+    SUPPORT_TICKET_RESOLVED = "SUPPORT_TICKET_RESOLVED"
+    WHITE_LABEL_UPDATED = "WHITE_LABEL_UPDATED"
+    ONBOARDING_STEP_COMPLETED = "ONBOARDING_STEP_COMPLETED"
+    USAGE_LIMIT_EXCEEDED = "USAGE_LIMIT_EXCEEDED"
+    GDPR_DATA_EXPORT = "GDPR_DATA_EXPORT"
+    GDPR_DATA_DELETION = "GDPR_DATA_DELETION"
 
 
 class SchedulerLogStatus(str, Enum):
@@ -546,3 +565,63 @@ class RouteAlgorithm(str, Enum):
     GENETIC = "genetic"                  # Genetski algoritam
     HYBRID = "hybrid"                    # Hibrid (Dijkstra + Genetic)
     NEAREST_NEIGHBOR = "nearest_neighbor"  # Najbliži sused
+
+
+# ============================================================================
+# SPRINT-11 COMMERCIAL - SAAS BILLING, SUBSCRIPTIONS, SUPPORT
+# ============================================================================
+
+class SubscriptionPlan(str, Enum):
+    """
+    SaaS subscription plans
+    Serbian: Plan pretplate
+    """
+    FREE_TRIAL = "free_trial"        # Besplatan probni period
+    STANDARD = "standard"            # Standardni
+    PROFESSIONAL = "professional"    # Profesionalni
+    ENTERPRISE = "enterprise"        # Enterprise
+
+
+class PaymentMethod(str, Enum):
+    """
+    Payment methods for billing
+    Serbian: Način plaćanja
+    """
+    CREDIT_CARD = "credit_card"      # Kreditna kartica
+    INVOICE = "invoice"              # Faktura
+    WIRE_TRANSFER = "wire_transfer"  # Bankovna transakcija
+    NONE = "none"                    # Nije postavljeno
+
+
+class BillingStatus(str, Enum):
+    """
+    Billing subscription status
+    Serbian: Status naplate
+    """
+    ACTIVE = "active"                # Aktivna
+    PAYMENT_DUE = "payment_due"      # Čeka plaćanje
+    SUSPENDED = "suspended"          # Suspendovana
+    CANCELLED = "cancelled"          # Otkazana
+
+
+class TicketStatus(str, Enum):
+    """
+    Support ticket status
+    Serbian: Status tiketa
+    """
+    OPEN = "open"                        # Otvoreno
+    IN_PROGRESS = "in_progress"          # U toku
+    WAITING_CUSTOMER = "waiting_customer"  # Čeka klijenta
+    RESOLVED = "resolved"                # Rešeno
+    CLOSED = "closed"                    # Zatvoreno
+
+
+class TicketPriority(str, Enum):
+    """
+    Support ticket priority
+    Serbian: Prioritet tiketa
+    """
+    LOW = "low"          # Nizak
+    MEDIUM = "medium"    # Srednji
+    HIGH = "high"        # Visok
+    URGENT = "urgent"    # Hitan
