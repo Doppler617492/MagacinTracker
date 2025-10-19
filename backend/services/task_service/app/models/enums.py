@@ -176,6 +176,17 @@ class AuditAction(str, Enum):
     RESTOCK_APPROVED = "RESTOCK_APPROVED"
     RESTOCK_REJECTED = "RESTOCK_REJECTED"
     PANTHEON_ORDER_CREATED = "PANTHEON_ORDER_CREATED"
+    
+    # Sprint-10 FINAL actions (AR Collab, Multi-Tenancy, Optimization)
+    AR_COLLAB_JOIN = "AR_COLLAB_JOIN"
+    AR_COLLAB_LEAVE = "AR_COLLAB_LEAVE"
+    AR_COLLAB_ACTION = "AR_COLLAB_ACTION"
+    VISION_VERIFIED = "VISION_VERIFIED"
+    VISION_FLAGGED = "VISION_FLAGGED"
+    ROUTE_OPTIMIZED = "ROUTE_OPTIMIZED"
+    ENERGY_OPTIMIZED = "ENERGY_OPTIMIZED"
+    TENANT_CREATED = "TENANT_CREATED"
+    TENANT_SWITCHED = "TENANT_SWITCHED"
 
 
 class SchedulerLogStatus(str, Enum):
@@ -509,3 +520,29 @@ class RestockStatus(str, Enum):
     REJECTED = "rejected"    # Odbijeno
     ORDERED = "ordered"      # Naručeno (Pantheon)
     RECEIVED = "received"    # Primljeno
+
+
+# ============================================================================
+# SPRINT-10 FINAL - AR COLLABORATION, MULTI-TENANCY, ROUTE OPTIMIZATION
+# ============================================================================
+
+class TenantStatus(str, Enum):
+    """
+    Tenant subscription status (SaaS)
+    Serbian: Status pretplate
+    """
+    ACTIVE = "active"            # Aktivna
+    SUSPENDED = "suspended"      # Suspendovana
+    TRIAL = "trial"              # Probna
+    CANCELLED = "cancelled"      # Otkazana
+
+
+class RouteAlgorithm(str, Enum):
+    """
+    Route optimization algorithms
+    Serbian: Algoritam optimizacije rute
+    """
+    DIJKSTRA = "dijkstra"                # Dijkstra (shortest path)
+    GENETIC = "genetic"                  # Genetski algoritam
+    HYBRID = "hybrid"                    # Hibrid (Dijkstra + Genetic)
+    NEAREST_NEIGHBOR = "nearest_neighbor"  # Najbliži sused

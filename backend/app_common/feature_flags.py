@@ -49,6 +49,12 @@ class FeatureFlag(str, Enum):
     FF_AR_MODE = "FF_AR_MODE"                      # AR/WebXR interface
     FF_PREDICTIVE_RESTOCK = "FF_PREDICTIVE_RESTOCK"  # AI inventory forecasting
     FF_PANTHEON_ORDERS = "FF_PANTHEON_ORDERS"      # Pantheon order automation
+    
+    # Phase 10 (FINAL) - AR Collaboration, Multi-Tenancy, Optimization
+    FF_AR_COLLABORATION = "FF_AR_COLLABORATION"    # Multi-worker AR sync
+    FF_VISION_QUALITY = "FF_VISION_QUALITY"        # Vision AI quality control
+    FF_ROUTE_OPTIMIZATION = "FF_ROUTE_OPTIMIZATION"  # AI route optimizer
+    FF_MULTI_TENANT = "FF_MULTI_TENANT"            # SaaS multi-tenancy
 
 
 class FeatureFlagService:
@@ -108,6 +114,12 @@ class FeatureFlagService:
         FeatureFlag.FF_AR_MODE: False,
         FeatureFlag.FF_PREDICTIVE_RESTOCK: False,
         FeatureFlag.FF_PANTHEON_ORDERS: False,
+        
+        # Phase 10 FINAL - AR Collaboration, Multi-Tenancy, Optimization
+        FeatureFlag.FF_AR_COLLABORATION: False,
+        FeatureFlag.FF_VISION_QUALITY: False,
+        FeatureFlag.FF_ROUTE_OPTIMIZATION: False,
+        FeatureFlag.FF_MULTI_TENANT: False,
     }
     
     @classmethod
@@ -317,4 +329,25 @@ def is_predictive_restock_enabled() -> bool:
 def is_pantheon_orders_enabled() -> bool:
     """Check if Pantheon Order Automation is enabled"""
     return FeatureFlagService.is_enabled(FeatureFlag.FF_PANTHEON_ORDERS)
+
+
+# Phase 10 (FINAL) - AR Collaboration, Multi-Tenancy, Optimization
+def is_ar_collaboration_enabled() -> bool:
+    """Check if AR Collaboration is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_AR_COLLABORATION)
+
+
+def is_vision_quality_enabled() -> bool:
+    """Check if Vision Quality Control is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_VISION_QUALITY)
+
+
+def is_route_optimization_enabled() -> bool:
+    """Check if Route Optimization is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_ROUTE_OPTIMIZATION)
+
+
+def is_multi_tenant_enabled() -> bool:
+    """Check if Multi-Tenant SaaS is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_MULTI_TENANT)
 
