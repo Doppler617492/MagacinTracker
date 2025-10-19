@@ -31,8 +31,13 @@ class FeatureFlag(str, Enum):
     FF_LOCATIONS = "FF_LOCATIONS"                  # Location management
     FF_RFID_ZONES = "FF_RFID_ZONES"                # RFID zone tracking
     FF_LIVE_MAP = "FF_LIVE_MAP"                    # Live map with WebSocket
-    FF_PICK_TO_LIGHT = "FF_PICK_TO_LIGHT"          # Pick-to-light (reserved)
+    FF_PICK_TO_LIGHT = "FF_PICK_TO_LIGHT"          # Pick-to-light indicators
     FF_PALLET_TRACKING = "FF_PALLET_TRACKING"      # Handling unit tracking
+    
+    # Phase 7 - Vision AI & Robotics
+    FF_VISION_AI = "FF_VISION_AI"                  # Vision AI image analysis
+    FF_AMR_INTEGRATION = "FF_AMR_INTEGRATION"      # AMR robotics integration
+    FF_LIGHT_GUIDANCE = "FF_LIGHT_GUIDANCE"        # LED light guidance
 
 
 class FeatureFlagService:
@@ -74,8 +79,13 @@ class FeatureFlagService:
         FeatureFlag.FF_LOCATIONS: False,
         FeatureFlag.FF_RFID_ZONES: False,
         FeatureFlag.FF_LIVE_MAP: False,
-        FeatureFlag.FF_PICK_TO_LIGHT: False,  # Reserved for future
+        FeatureFlag.FF_PICK_TO_LIGHT: False,
         FeatureFlag.FF_PALLET_TRACKING: False,
+        
+        # Phase 7 - Vision AI & Robotics: Disabled by default
+        FeatureFlag.FF_VISION_AI: False,
+        FeatureFlag.FF_AMR_INTEGRATION: False,
+        FeatureFlag.FF_LIGHT_GUIDANCE: False,
     }
     
     @classmethod
@@ -232,4 +242,20 @@ def is_pick_to_light_enabled() -> bool:
 def is_pallet_tracking_enabled() -> bool:
     """Check if Pallet Tracking is enabled"""
     return FeatureFlagService.is_enabled(FeatureFlag.FF_PALLET_TRACKING)
+
+
+# Phase 7 - Vision AI & Robotics
+def is_vision_ai_enabled() -> bool:
+    """Check if Vision AI is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_VISION_AI)
+
+
+def is_amr_integration_enabled() -> bool:
+    """Check if AMR Integration is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_AMR_INTEGRATION)
+
+
+def is_light_guidance_enabled() -> bool:
+    """Check if Light Guidance is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_LIGHT_GUIDANCE)
 

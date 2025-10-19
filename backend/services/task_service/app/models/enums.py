@@ -144,6 +144,17 @@ class AuditAction(str, Enum):
     VISION_COUNT_SUBMITTED = "VISION_COUNT_SUBMITTED"
     VISION_COUNT_APPROVED = "VISION_COUNT_APPROVED"
     VISION_COUNT_REJECTED = "VISION_COUNT_REJECTED"
+    
+    # Vision AI & Robotics actions (Phase 7)
+    VISION_ANALYZE = "VISION_ANALYZE"
+    VISION_CONFIRMED = "VISION_CONFIRMED"
+    VISION_DISCREPANCY = "VISION_DISCREPANCY"
+    AMR_TASK_CREATED = "AMR_TASK_CREATED"
+    AMR_TASK_ASSIGNED = "AMR_TASK_ASSIGNED"
+    AMR_TASK_DONE = "AMR_TASK_DONE"
+    AMR_TASK_ERROR = "AMR_TASK_ERROR"
+    INDICATOR_ON = "INDICATOR_ON"
+    INDICATOR_OFF = "INDICATOR_OFF"
 
 
 class SchedulerLogStatus(str, Enum):
@@ -372,3 +383,53 @@ class HandlingUnitStatus(str, Enum):
     STORED = "stored"        # Uskladištena
     PICKED = "picked"        # Pokupljena
     OUTBOUND = "outbound"    # Odlazna
+
+
+# ============================================================================
+# VISION AI & ROBOTICS - PHASE 7
+# ============================================================================
+
+class IndicatorType(str, Enum):
+    """
+    Location indicator types (Pick-to-Light / Put-to-Light)
+    Serbian: Tip indikatora
+    """
+    PICK = "pick"            # Pick-to-Light (zeleno)
+    PUT = "put"              # Put-to-Light (plavo)
+    ALERT = "alert"          # Alarm (crveno)
+    GUIDANCE = "guidance"    # Vodič (belo)
+
+
+class IndicatorStatus(str, Enum):
+    """
+    Indicator status
+    Serbian: Status indikatora
+    """
+    OFF = "off"          # Ugašeno
+    ON = "on"            # Uključeno
+    BLINK = "blink"      # Trepće
+    ERROR = "error"      # Greška
+
+
+class AMRTaskType(str, Enum):
+    """
+    AMR (Autonomous Mobile Robot) task types
+    Serbian: Tip zadatka za robota
+    """
+    PICK = "pick"            # Izdavanje
+    PUTAWAY = "putaway"      # Uskladištenje
+    MOVE = "move"            # Premeštanje
+    TRANSPORT = "transport"  # Transport
+
+
+class AMRTaskStatus(str, Enum):
+    """
+    AMR task status
+    Serbian: Status zadatka robota
+    """
+    PENDING = "pending"          # Na čekanju
+    ASSIGNED = "assigned"        # Dodeljen
+    IN_PROGRESS = "in_progress"  # U toku
+    COMPLETED = "completed"      # Završen
+    ERROR = "error"              # Greška
+    CANCELLED = "cancelled"      # Otkazan
