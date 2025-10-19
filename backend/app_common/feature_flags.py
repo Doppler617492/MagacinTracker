@@ -19,6 +19,13 @@ class FeatureFlag(str, Enum):
     FF_AI_RESTOCKING = "FF_AI_RESTOCKING"          # Predictive restocking
     FF_AI_ANOMALY = "FF_AI_ANOMALY"                # Anomaly detection
     FF_SMART_KPI = "FF_SMART_KPI"                  # Smart KPI & benchmarking
+    
+    # Phase 5 - IoT Integration Layer
+    FF_IOT_RFID = "FF_IOT_RFID"                    # RFID gateway integration
+    FF_IOT_DOORS = "FF_IOT_DOORS"                  # Industrial door control
+    FF_IOT_CAMERA = "FF_IOT_CAMERA"                # Camera verification & photos
+    FF_IOT_TELEMETRY = "FF_IOT_TELEMETRY"          # Sensor telemetry & alerts
+    FF_VISION_COUNT = "FF_VISION_COUNT"            # Vision-based cycle counting
 
 
 class FeatureFlagService:
@@ -48,6 +55,13 @@ class FeatureFlagService:
         FeatureFlag.FF_AI_RESTOCKING: False,
         FeatureFlag.FF_AI_ANOMALY: False,
         FeatureFlag.FF_SMART_KPI: False,
+        
+        # Phase 5 - IoT: Disabled by default for safe rollout
+        FeatureFlag.FF_IOT_RFID: False,
+        FeatureFlag.FF_IOT_DOORS: False,
+        FeatureFlag.FF_IOT_CAMERA: False,
+        FeatureFlag.FF_IOT_TELEMETRY: False,
+        FeatureFlag.FF_VISION_COUNT: False,
     }
     
     @classmethod
@@ -152,4 +166,30 @@ def is_ai_anomaly_enabled() -> bool:
 def is_smart_kpi_enabled() -> bool:
     """Check if Smart KPI is enabled"""
     return FeatureFlagService.is_enabled(FeatureFlag.FF_SMART_KPI)
+
+
+# Phase 5 - IoT Integration Layer
+def is_iot_rfid_enabled() -> bool:
+    """Check if IoT RFID is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_IOT_RFID)
+
+
+def is_iot_doors_enabled() -> bool:
+    """Check if IoT Door Control is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_IOT_DOORS)
+
+
+def is_iot_camera_enabled() -> bool:
+    """Check if IoT Camera is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_IOT_CAMERA)
+
+
+def is_iot_telemetry_enabled() -> bool:
+    """Check if IoT Telemetry is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_IOT_TELEMETRY)
+
+
+def is_vision_count_enabled() -> bool:
+    """Check if Vision Count is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_VISION_COUNT)
 
