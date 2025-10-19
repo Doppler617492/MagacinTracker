@@ -8,10 +8,17 @@ import os
 
 class FeatureFlag(str, Enum):
     """Feature flags for WMS features"""
+    # Phase 2
     FF_RECEIVING = "FF_RECEIVING"  # Receiving (Prijem) workflow
     FF_UOM_PACK = "FF_UOM_PACK"    # UoM / Case-Pack conversion
     FF_RBAC_UI = "FF_RBAC_UI"      # RBAC UI administration
     FF_CATALOG_SYNC_V2 = "FF_CATALOG_SYNC_V2"  # Hardened catalog sync
+    
+    # Phase 4 - AI Intelligence Layer
+    FF_AI_BIN_ALLOCATION = "FF_AI_BIN_ALLOCATION"  # AI-powered bin suggestions
+    FF_AI_RESTOCKING = "FF_AI_RESTOCKING"          # Predictive restocking
+    FF_AI_ANOMALY = "FF_AI_ANOMALY"                # Anomaly detection
+    FF_SMART_KPI = "FF_SMART_KPI"                  # Smart KPI & benchmarking
 
 
 class FeatureFlagService:
@@ -30,10 +37,17 @@ class FeatureFlagService:
     
     # Default flag states
     _flags: Dict[FeatureFlag, bool] = {
-        FeatureFlag.FF_RECEIVING: True,      # Phase 2: Enabled by default
-        FeatureFlag.FF_UOM_PACK: True,       # Phase 2: Enabled by default
-        FeatureFlag.FF_RBAC_UI: True,        # Phase 2: Enabled by default
-        FeatureFlag.FF_CATALOG_SYNC_V2: True,  # Phase 2: Enabled by default
+        # Phase 2: Enabled by default
+        FeatureFlag.FF_RECEIVING: True,
+        FeatureFlag.FF_UOM_PACK: True,
+        FeatureFlag.FF_RBAC_UI: True,
+        FeatureFlag.FF_CATALOG_SYNC_V2: True,
+        
+        # Phase 4 - AI: Disabled by default for safe rollout
+        FeatureFlag.FF_AI_BIN_ALLOCATION: False,
+        FeatureFlag.FF_AI_RESTOCKING: False,
+        FeatureFlag.FF_AI_ANOMALY: False,
+        FeatureFlag.FF_SMART_KPI: False,
     }
     
     @classmethod
@@ -117,4 +131,25 @@ def is_rbac_ui_enabled() -> bool:
 def is_catalog_sync_v2_enabled() -> bool:
     """Check if hardened catalog sync is enabled"""
     return FeatureFlagService.is_enabled(FeatureFlag.FF_CATALOG_SYNC_V2)
+
+
+# Phase 4 - AI Intelligence Layer
+def is_ai_bin_allocation_enabled() -> bool:
+    """Check if AI bin allocation is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_AI_BIN_ALLOCATION)
+
+
+def is_ai_restocking_enabled() -> bool:
+    """Check if AI restocking is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_AI_RESTOCKING)
+
+
+def is_ai_anomaly_enabled() -> bool:
+    """Check if AI anomaly detection is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_AI_ANOMALY)
+
+
+def is_smart_kpi_enabled() -> bool:
+    """Check if Smart KPI is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_SMART_KPI)
 
