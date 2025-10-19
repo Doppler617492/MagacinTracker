@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Optional, List
 
+import sqlalchemy as sa
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -271,4 +272,74 @@ class CycleCountItem(Base):
         if self.variance_percent is None:
             return False
         return abs(float(self.variance_percent)) > 5.0
+
+
+class PickRoute(Base):
+    """Optimized picking route for zaduznica"""
+    __tablename__ = "pick_routes"
+    
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    zaduznica_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("zaduznica.id"),
+        nullable=False,
+        index=True
+    )
+    route_data: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default='[]')
+    total_distance_meters: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
+    estimated_time_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    actual_time_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        server_default=sa.text('NOW()')
+    )
+    
+    # Relationships
+    zaduznica: Mapped["Zaduznica"] = relationship("Zaduznica")
+
+
+class PutAwayTask(Base):
+    """Put-away task for received items"""
+    __tablename__ = "putaway_tasks"
+    
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    receiving_item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("receiving_item.id"),
+        nullable=False,
+        index=True
+    )
+    suggested_location_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id"),
+        nullable=True
+    )
+    actual_location_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("locations.id"),
+        nullable=True
+    )
+    quantity: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default='pending')
+    assigned_to_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        server_default=sa.text('NOW()')
+    )
+    
+    # Relationships
+    receiving_item: Mapped["ReceivingItem"] = relationship("ReceivingItem")
+    suggested_location: Mapped[Optional[Location]] = relationship("Location", foreign_keys=[suggested_location_id])
+    actual_location: Mapped[Optional[Location]] = relationship("Location", foreign_keys=[actual_location_id])
+    assigned_to: Mapped[Optional["UserAccount"]] = relationship("UserAccount")
 
