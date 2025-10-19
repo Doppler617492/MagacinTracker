@@ -155,6 +155,16 @@ class AuditAction(str, Enum):
     AMR_TASK_ERROR = "AMR_TASK_ERROR"
     INDICATOR_ON = "INDICATOR_ON"
     INDICATOR_OFF = "INDICATOR_OFF"
+    
+    # Voice Picking & Global Control Room actions (Phase 8)
+    VOICE_CONFIRM = "VOICE_CONFIRM"
+    VOICE_RETRY = "VOICE_RETRY"
+    VOICE_ERROR = "VOICE_ERROR"
+    DEVICE_TELEMETRY_INGESTED = "DEVICE_TELEMETRY_INGESTED"
+    DEVICE_OFFLINE_DETECTED = "DEVICE_OFFLINE_DETECTED"
+    PREDICTIVE_ALERT_RAISED = "PREDICTIVE_ALERT_RAISED"
+    PREDICTIVE_ALERT_ACK = "PREDICTIVE_ALERT_ACK"
+    GLOBAL_OVERVIEW_ACCESSED = "GLOBAL_OVERVIEW_ACCESSED"
 
 
 class SchedulerLogStatus(str, Enum):
@@ -433,3 +443,31 @@ class AMRTaskStatus(str, Enum):
     COMPLETED = "completed"      # Završen
     ERROR = "error"              # Greška
     CANCELLED = "cancelled"      # Otkazan
+
+
+# ============================================================================
+# VOICE PICKING & GLOBAL CONTROL ROOM - PHASE 8
+# ============================================================================
+
+class DeviceType(str, Enum):
+    """
+    Device types for health monitoring
+    Serbian: Tip uređaja
+    """
+    SCANNER = "scanner"              # Skener (Zebra)
+    CAMERA = "camera"                # Kamera
+    DOOR_CONTROLLER = "door_controller"  # Kontroler vrata
+    EDGE_GATEWAY = "edge_gateway"    # Edge gateway
+    INDICATOR = "indicator"          # LED indikator
+    AMR = "amr"                      # Autonomni robot
+
+
+class PredictiveAlertStatus(str, Enum):
+    """
+    Predictive maintenance alert status
+    Serbian: Status prediktivnog upozorenja
+    """
+    NEW = "new"                          # Novo
+    ACKNOWLEDGED = "acknowledged"        # Primljeno na znanje
+    RESOLVED = "resolved"                # Rešeno
+    FALSE_POSITIVE = "false_positive"    # Lažna dojava

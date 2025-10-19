@@ -38,6 +38,12 @@ class FeatureFlag(str, Enum):
     FF_VISION_AI = "FF_VISION_AI"                  # Vision AI image analysis
     FF_AMR_INTEGRATION = "FF_AMR_INTEGRATION"      # AMR robotics integration
     FF_LIGHT_GUIDANCE = "FF_LIGHT_GUIDANCE"        # LED light guidance
+    
+    # Phase 8 - Voice Picking & Global Control Room
+    FF_VOICE_PICKING = "FF_VOICE_PICKING"          # Voice hands-free mode
+    FF_GLOBAL_OVERVIEW = "FF_GLOBAL_OVERVIEW"      # Multi-warehouse control room
+    FF_DEVICE_TELEMETRY = "FF_DEVICE_TELEMETRY"    # Device health monitoring
+    FF_PREDICTIVE_MAINT = "FF_PREDICTIVE_MAINT"    # Predictive maintenance
 
 
 class FeatureFlagService:
@@ -86,6 +92,12 @@ class FeatureFlagService:
         FeatureFlag.FF_VISION_AI: False,
         FeatureFlag.FF_AMR_INTEGRATION: False,
         FeatureFlag.FF_LIGHT_GUIDANCE: False,
+        
+        # Phase 8 - Voice & Global Control: Disabled by default
+        FeatureFlag.FF_VOICE_PICKING: False,
+        FeatureFlag.FF_GLOBAL_OVERVIEW: False,
+        FeatureFlag.FF_DEVICE_TELEMETRY: False,
+        FeatureFlag.FF_PREDICTIVE_MAINT: False,
     }
     
     @classmethod
@@ -258,4 +270,25 @@ def is_amr_integration_enabled() -> bool:
 def is_light_guidance_enabled() -> bool:
     """Check if Light Guidance is enabled"""
     return FeatureFlagService.is_enabled(FeatureFlag.FF_LIGHT_GUIDANCE)
+
+
+# Phase 8 - Voice Picking & Global Control Room
+def is_voice_picking_enabled() -> bool:
+    """Check if Voice Picking is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_VOICE_PICKING)
+
+
+def is_global_overview_enabled() -> bool:
+    """Check if Global Overview is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_GLOBAL_OVERVIEW)
+
+
+def is_device_telemetry_enabled() -> bool:
+    """Check if Device Telemetry is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_DEVICE_TELEMETRY)
+
+
+def is_predictive_maint_enabled() -> bool:
+    """Check if Predictive Maintenance is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_PREDICTIVE_MAINT)
 
