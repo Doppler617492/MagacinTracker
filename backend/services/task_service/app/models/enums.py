@@ -312,3 +312,63 @@ class TelemetryAlertSeverity(str, Enum):
     INFO = "info"            # Informativno
     WARNING = "warning"      # Upozorenje
     CRITICAL = "critical"    # Kritično
+
+
+# ============================================================================
+# RFID LOCATIONS & LIVE MAP - PHASE 6
+# ============================================================================
+
+class ZoneType(str, Enum):
+    """
+    Warehouse zone types
+    Serbian: Tip zone magacina
+    """
+    DOCK = "dock"                # Dok (prijem/otprema)
+    CHILL = "chill"              # Hladnjača
+    AISLE = "aisle"              # Prolaz/regal
+    QUARANTINE = "quarantine"    # Karantin
+    STAGING = "staging"          # Pripremna zona
+
+
+class LocationTypeV2(str, Enum):
+    """
+    Location types (granular)
+    Serbian: Tip lokacije (detaljno)
+    """
+    BIN = "bin"              # Bin/polica
+    PALLET = "pallet"        # Paletno mesto
+    FLOWRACK = "flowrack"    # Flow rack
+    SHELF = "shelf"          # Shelf
+
+
+class TagType(str, Enum):
+    """
+    Tag types for locations
+    Serbian: Tip taga
+    """
+    RFID = "rfid"        # RFID EPC
+    QR = "qr"            # QR kod
+    BARCODE = "barcode"  # Barkod
+
+
+class HandlingUnitType(str, Enum):
+    """
+    Handling unit types
+    Serbian: Tip paletne jedinice
+    """
+    PALLET = "pallet"    # Paleta
+    CARTON = "carton"    # Karton
+    ROLL = "roll"        # Roll kontejner
+    TOTE = "tote"        # Korpa
+
+
+class HandlingUnitStatus(str, Enum):
+    """
+    Handling unit status
+    Serbian: Status paletne jedinice
+    """
+    INBOUND = "inbound"      # Dolazna
+    STAGED = "staged"        # Pripremljena
+    STORED = "stored"        # Uskladištena
+    PICKED = "picked"        # Pokupljena
+    OUTBOUND = "outbound"    # Odlazna
