@@ -1,0 +1,211 @@
+/**
+ * Receiving List Page Styles
+ * Manhattan Active WMS clarity-first design
+ */
+
+.receiving-list-page {
+  min-height: 100vh;
+  background: #F8F9FA;
+  display: flex;
+  flex-direction: column;
+}
+
+.receiving-list-page__container {
+  flex: 1;
+  padding: 24px 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Header */
+.receiving-list-page__header {
+  margin-bottom: 24px;
+}
+
+.receiving-list-page__header h2 {
+  margin-bottom: 16px !important;
+  color: #212529;
+}
+
+.receiving-list-page__filters {
+  margin-bottom: 16px;
+}
+
+/* List */
+.receiving-list-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Receiving Card */
+.receiving-card {
+  background: #FFFFFF;
+  border: 2px solid #E9ECEF;
+  border-radius: 12px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.receiving-card:hover {
+  border-color: #0D6EFD;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+  transform: translateY(-2px);
+}
+
+.receiving-card:active {
+  transform: translateY(0);
+}
+
+.receiving-card__content {
+  padding: 4px;
+}
+
+.receiving-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.receiving-card__broj {
+  font-size: 18px;
+  color: #212529;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.receiving-card__status {
+  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.receiving-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.receiving-card__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.receiving-card__progress {
+  padding-top: 12px;
+  border-top: 1px solid #E9ECEF;
+}
+
+/* Mobile Optimization */
+@media (max-width: 768px) {
+  .receiving-list-page__container {
+    padding: 16px 12px;
+  }
+
+  .receiving-list-page__filters {
+    width: 100%;
+  }
+
+  .receiving-list-page__filters .ant-space {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .receiving-list-page__filters .ant-select,
+  .receiving-list-page__filters .ant-input {
+    width: 100% !important;
+  }
+
+  .receiving-card__broj {
+    font-size: 16px;
+  }
+}
+
+/* Zebra MC3300 Small Screen */
+@media (max-width: 480px) {
+  .receiving-list-page__list {
+    gap: 12px;
+  }
+
+  .receiving-card {
+    border-width: 1px;
+  }
+
+  .receiving-card__content {
+    padding: 2px;
+  }
+
+  .receiving-card__broj {
+    font-size: 15px;
+  }
+
+  .receiving-card__row {
+    font-size: 14px;
+  }
+}
+
+/* Dark Theme */
+@media (prefers-color-scheme: dark) {
+  .receiving-list-page {
+    background: #1A1A1A;
+  }
+
+  .receiving-card {
+    background: #2C2C2C;
+    border-color: #3C3C3C;
+  }
+
+  .receiving-card:hover {
+    border-color: #4B9EFF;
+    background: #333333;
+  }
+
+  .receiving-card__broj {
+    color: #FFFFFF;
+  }
+
+  .receiving-card__progress {
+    border-top-color: #3C3C3C;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .receiving-card {
+    border-width: 3px;
+  }
+
+  .receiving-card__broj {
+    font-weight: 700;
+  }
+}
+
+/* Touch Feedback */
+.receiving-card:active {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading State */
+.receiving-card--loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.receiving-card--loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
