@@ -1,0 +1,131 @@
+/**
+ * Partial Completion Modal Styles
+ * Manhattan Active WMS exception handling pattern
+ */
+
+.partial-completion-modal .ant-modal-header {
+  border-bottom: 1px solid #E9ECEF;
+  padding: 20px 24px;
+}
+
+.partial-completion-modal .ant-modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.partial-completion-modal .ant-modal-body {
+  padding: 24px;
+}
+
+.partial-completion-modal__select {
+  font-size: 16px;
+}
+
+.partial-completion-modal .ant-select-selector {
+  height: 48px !important;
+  padding: 8px 12px !important;
+  font-size: 16px !important;
+}
+
+.partial-completion-modal .ant-select-selection-item {
+  line-height: 32px !important;
+}
+
+.partial-completion-modal .ant-form-item-label > label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.partial-completion-modal .ant-input-textarea-show-count::after {
+  font-size: 13px;
+  color: #6C757D;
+}
+
+/* Alert Customization */
+.partial-completion-modal .ant-alert {
+  border-radius: 8px;
+}
+
+.partial-completion-modal .ant-alert-message {
+  font-size: 15px;
+  font-weight: 600;
+  color: #856404;
+}
+
+.partial-completion-modal .ant-alert-description {
+  font-size: 14px;
+  color: #856404;
+}
+
+/* Buttons */
+.partial-completion-modal .ant-btn-lg {
+  height: 48px;
+  padding: 0 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 576px) {
+  .partial-completion-modal {
+    max-width: calc(100% - 32px) !important;
+  }
+
+  .partial-completion-modal .ant-modal-body {
+    padding: 16px;
+  }
+
+  .partial-completion-modal .ant-modal-title {
+    font-size: 18px;
+  }
+
+  .partial-completion-modal .ant-btn-lg {
+    width: 48%;
+  }
+}
+
+/* High Contrast */
+@media (prefers-contrast: high) {
+  .partial-completion-modal .ant-form-item-label > label {
+    font-weight: 700;
+  }
+
+  .partial-completion-modal .ant-select-selector,
+  .partial-completion-modal .ant-input {
+    border-width: 2px !important;
+  }
+}
+
+/* Dark Theme */
+@media (prefers-color-scheme: dark) {
+  .partial-completion-modal .ant-modal-content {
+    background: #2C2C2C;
+  }
+
+  .partial-completion-modal .ant-modal-header {
+    background: #2C2C2C;
+    border-bottom-color: #3C3C3C;
+  }
+
+  .partial-completion-modal .ant-modal-title {
+    color: #FFFFFF;
+  }
+
+  .partial-completion-modal .ant-form-item-label > label {
+    color: #FFFFFF;
+  }
+
+  .partial-completion-modal .ant-alert-warning {
+    background: #3C2F00;
+    border-color: #6B5300;
+  }
+
+  .partial-completion-modal .ant-alert-message,
+  .partial-completion-modal .ant-alert-description {
+    color: #FFD666;
+  }
+}
+
