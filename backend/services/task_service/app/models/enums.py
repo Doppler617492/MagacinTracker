@@ -66,6 +66,18 @@ class DiscrepancyStatus(str, Enum):
     wrong_barcode = "wrong_barcode"
 
 
+class PartialCompletionReason(str, Enum):
+    """
+    Reasons for partial completion (Manhattan-style exception handling)
+    Serbian: Razlog za djelimično završen zadatak
+    """
+    NEMA_NA_STANJU = "nema_na_stanju"          # Out of stock
+    OSTECENO = "osteceno"                      # Damaged
+    NIJE_PRONAĐENO = "nije_pronađeno"          # Not found
+    KRIVI_ARTIKAL = "krivi_artikal"            # Wrong article
+    DRUGO = "drugo"                            # Other (custom reason)
+
+
 class AuditAction(str, Enum):
     # Authentication actions
     LOGIN_SUCCESS = "LOGIN_SUCCESS"

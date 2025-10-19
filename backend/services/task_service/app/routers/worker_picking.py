@@ -22,6 +22,11 @@ from ..schemas import (
     ShortPickRequest,
     ShortPickResponse,
 )
+from ..schemas.partial import (
+    PartialCompleteRequest,
+    PartialCompleteResponse,
+    MarkirajPreostaloRequest,
+)
 from ..services.catalog import CatalogService
 from ..services.shortage import ShortageService
 
@@ -136,6 +141,86 @@ async def not_found(
     
     try:
         return await service.record_not_found(stavka_id, request, user_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
+@router.post("/worker/tasks/{stavka_id}/partial-complete", response_model=PartialCompleteResponse)
+async def partial_complete(
+    stavka_id: UUID,
+    request: PartialCompleteRequest,
+    current_user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+) -> PartialCompleteResponse:
+    """
+    Complete task with partial quantity (Manhattan-style exception handling).
+    
+    Serbian: Završi zadatak sa djelimičnom količinom
+    
+    This endpoint allows workers to complete a task with a quantity less than requested,
+    providing a reason for the discrepancy. This is the Manhattan Active WMS pattern
+    for exception handling.
+    
+    Args:
+        stavka_id: Trebovanje stavka ID
+        request: Partial completion details (količina_pronađena, razlog, razlog_tekst)
+        
+    Returns:
+        Updated stavka with is_partial=true, procenat_ispunjenja, status
+        
+    Raises:
+        400: If količina_pronađena > količina_tražena or validation fails
+        404: If stavka not found
+    """
+    service = ShortageService(db)
+    user_id = UUID(current_user.get("sub") or current_user.get("id"))
+    
+    try:
+        return await service.complete_partial(stavka_id, request, user_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal error: {str(e)}",
+        )
+
+
+@router.post("/worker/tasks/{stavka_id}/markiraj-preostalo")
+async def markiraj_preostalo(
+    stavka_id: UUID,
+    request: MarkirajPreostaloRequest,
+    current_user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """
+    Mark remaining quantity as 0 (Serbian: Markiraj preostalo = 0).
+    
+    This is a convenience endpoint that sets količina_pronađena to the current
+    picked_qty and marks the item as partial with a reason.
+    
+    Typical use: Worker has scanned/entered some items but cannot find the rest.
+    Instead of manually entering the quantity found, they can use this endpoint
+    to automatically set it and provide a reason.
+    
+    Args:
+        stavka_id: Trebovanje stavka ID
+        request: Reason for not finding remaining items
+        
+    Returns:
+        Updated stavka marked as partial
+    """
+    service = ShortageService(db)
+    user_id = UUID(current_user.get("sub") or current_user.get("id"))
+    
+    try:
+        return await service.markiraj_preostalo(stavka_id, request, user_id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
