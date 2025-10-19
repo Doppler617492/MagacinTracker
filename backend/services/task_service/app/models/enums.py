@@ -165,6 +165,17 @@ class AuditAction(str, Enum):
     PREDICTIVE_ALERT_RAISED = "PREDICTIVE_ALERT_RAISED"
     PREDICTIVE_ALERT_ACK = "PREDICTIVE_ALERT_ACK"
     GLOBAL_OVERVIEW_ACCESSED = "GLOBAL_OVERVIEW_ACCESSED"
+    
+    # AR Interface & Predictive Restocking actions (Phase 9)
+    AR_SESSION_STARTED = "AR_SESSION_STARTED"
+    AR_ROUTE_DISPLAYED = "AR_ROUTE_DISPLAYED"
+    AR_CONFIRMATION_DONE = "AR_CONFIRMATION_DONE"
+    AR_SESSION_COMPLETED = "AR_SESSION_COMPLETED"
+    RESTOCK_FORECAST_RUN = "RESTOCK_FORECAST_RUN"
+    RESTOCK_SUGGESTION_CREATED = "RESTOCK_SUGGESTION_CREATED"
+    RESTOCK_APPROVED = "RESTOCK_APPROVED"
+    RESTOCK_REJECTED = "RESTOCK_REJECTED"
+    PANTHEON_ORDER_CREATED = "PANTHEON_ORDER_CREATED"
 
 
 class SchedulerLogStatus(str, Enum):
@@ -471,3 +482,30 @@ class PredictiveAlertStatus(str, Enum):
     ACKNOWLEDGED = "acknowledged"        # Primljeno na znanje
     RESOLVED = "resolved"                # Rešeno
     FALSE_POSITIVE = "false_positive"    # Lažna dojava
+
+
+# ============================================================================
+# AR INTERFACE & PREDICTIVE RESTOCKING - PHASE 9
+# ============================================================================
+
+class ARSessionStatus(str, Enum):
+    """
+    AR session status
+    Serbian: Status AR sesije
+    """
+    ACTIVE = "active"          # Aktivna
+    PAUSED = "paused"          # Pauzirana
+    COMPLETED = "completed"    # Završena
+    ERROR = "error"            # Greška
+
+
+class RestockStatus(str, Enum):
+    """
+    Restock suggestion status (AI-driven)
+    Serbian: Status predloga dopune
+    """
+    PENDING = "pending"      # Na čekanju
+    APPROVED = "approved"    # Odobreno
+    REJECTED = "rejected"    # Odbijeno
+    ORDERED = "ordered"      # Naručeno (Pantheon)
+    RECEIVED = "received"    # Primljeno

@@ -44,6 +44,11 @@ class FeatureFlag(str, Enum):
     FF_GLOBAL_OVERVIEW = "FF_GLOBAL_OVERVIEW"      # Multi-warehouse control room
     FF_DEVICE_TELEMETRY = "FF_DEVICE_TELEMETRY"    # Device health monitoring
     FF_PREDICTIVE_MAINT = "FF_PREDICTIVE_MAINT"    # Predictive maintenance
+    
+    # Phase 9 - AR Interface & Predictive Re-stocking
+    FF_AR_MODE = "FF_AR_MODE"                      # AR/WebXR interface
+    FF_PREDICTIVE_RESTOCK = "FF_PREDICTIVE_RESTOCK"  # AI inventory forecasting
+    FF_PANTHEON_ORDERS = "FF_PANTHEON_ORDERS"      # Pantheon order automation
 
 
 class FeatureFlagService:
@@ -98,6 +103,11 @@ class FeatureFlagService:
         FeatureFlag.FF_GLOBAL_OVERVIEW: False,
         FeatureFlag.FF_DEVICE_TELEMETRY: False,
         FeatureFlag.FF_PREDICTIVE_MAINT: False,
+        
+        # Phase 9 - AR & Predictive Restock: Disabled by default
+        FeatureFlag.FF_AR_MODE: False,
+        FeatureFlag.FF_PREDICTIVE_RESTOCK: False,
+        FeatureFlag.FF_PANTHEON_ORDERS: False,
     }
     
     @classmethod
@@ -291,4 +301,20 @@ def is_device_telemetry_enabled() -> bool:
 def is_predictive_maint_enabled() -> bool:
     """Check if Predictive Maintenance is enabled"""
     return FeatureFlagService.is_enabled(FeatureFlag.FF_PREDICTIVE_MAINT)
+
+
+# Phase 9 - AR Interface & Predictive Re-stocking
+def is_ar_mode_enabled() -> bool:
+    """Check if AR Mode is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_AR_MODE)
+
+
+def is_predictive_restock_enabled() -> bool:
+    """Check if Predictive Re-stocking is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_PREDICTIVE_RESTOCK)
+
+
+def is_pantheon_orders_enabled() -> bool:
+    """Check if Pantheon Order Automation is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_PANTHEON_ORDERS)
 
