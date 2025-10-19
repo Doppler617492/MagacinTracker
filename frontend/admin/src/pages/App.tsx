@@ -15,11 +15,7 @@ import {
   ThunderboltOutlined, 
   SettingOutlined, 
   TeamOutlined,
-  WarningOutlined,
-  UserAddOutlined,
-  DollarOutlined,
-  LineChartOutlined,
-  ApiOutlined
+  WarningOutlined
 } from "@ant-design/icons";
 import { Outlet, Route, Routes, Link, useLocation } from "react-router-dom";
 import DashboardPage from "./DashboardPage";
@@ -39,13 +35,6 @@ import UserManagementPage from "./UserManagementPage";
 import ShortageReportsPage from "./ShortageReportsPage";
 import TeamsPage from "./TeamsPage";
 import LoginPage from "./LoginPage";
-// Sprint 11-12: Commercial SaaS Pages
-import PartnerPortalPage from "./PartnerPortalPage";
-import BillingManagementPage from "./BillingManagementPage";
-import CRMLeadManagementPage from "./CRMLeadManagementPage";
-import MarketingDashboardPage from "./MarketingDashboardPage";
-import TenantManagementPage from "./TenantManagementPage";
-import AIChatbotWidget from "../components/AIChatbotWidget";
 import { isAuthenticated, logout } from "../api";
 
 type StoredUser = {
@@ -143,41 +132,13 @@ const AdminLayout = () => {
       key: "/users",
       icon: <TeamOutlined />,
       label: <Link to="/users">Korisnici</Link>
-    },
-    // Sprint 11-12: Commercial SaaS Menu Items
-    {
-      key: "/partners",
-      icon: <ApiOutlined />,
-      label: <Link to="/partners">Partner Portal</Link>
-    },
-    {
-      key: "/billing",
-      icon: <DollarOutlined />,
-      label: <Link to="/billing">Billing</Link>
-    },
-    {
-      key: "/leads",
-      icon: <UserAddOutlined />,
-      label: <Link to="/leads">CRM Leads</Link>
-    },
-    {
-      key: "/marketing",
-      icon: <LineChartOutlined />,
-      label: <Link to="/marketing">Marketing</Link>
-    },
-    {
-      key: "/tenants",
-      icon: <DatabaseOutlined />,
-      label: <Link to="/tenants">Tenanti</Link>
     }
   ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Header style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ color: "#fff", fontWeight: 600, fontSize: "18px" }}>
-          🚀 Cungu WMS Cloud
-        </div>
+        <div style={{ color: "#fff", fontWeight: 600, fontSize: "18px" }}>Magacin Admin</div>
         <Menu
           theme="dark"
           mode="horizontal"
@@ -192,8 +153,6 @@ const AdminLayout = () => {
       <Content style={{ padding: "24px" }}>
         <Outlet />
       </Content>
-      {/* Sprint 11-12: AI Chatbot Widget */}
-      <AIChatbotWidget />
     </Layout>
   );
 };
@@ -302,12 +261,6 @@ const App = () => {
         <Route path="teams" element={<TeamsPage />} />
         <Route path="users" element={<UserManagementPage />} />
         <Route path="shortages" element={<ShortageReportsPage />} />
-        {/* Sprint 11-12: Commercial SaaS Routes */}
-        <Route path="partners" element={<PartnerPortalPage />} />
-        <Route path="billing" element={<BillingManagementPage />} />
-        <Route path="leads" element={<CRMLeadManagementPage />} />
-        <Route path="marketing" element={<MarketingDashboardPage />} />
-        <Route path="tenants" element={<TenantManagementPage />} />
       </Route>
     </Routes>
   );
