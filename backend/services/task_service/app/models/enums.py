@@ -206,6 +206,23 @@ class AuditAction(str, Enum):
     USAGE_LIMIT_EXCEEDED = "USAGE_LIMIT_EXCEEDED"
     GDPR_DATA_EXPORT = "GDPR_DATA_EXPORT"
     GDPR_DATA_DELETION = "GDPR_DATA_DELETION"
+    
+    # Sprint-12 FINAL actions (Marketing, Sales, AI Support, Partners)
+    PARTNER_REGISTERED = "PARTNER_REGISTERED"
+    PARTNER_TENANT_CREATED = "PARTNER_TENANT_CREATED"
+    PARTNER_COMMISSION_PAID = "PARTNER_COMMISSION_PAID"
+    LEAD_CREATED = "LEAD_CREATED"
+    LEAD_QUALIFIED = "LEAD_QUALIFIED"
+    LEAD_CONVERTED = "LEAD_CONVERTED"
+    LEAD_LOST = "LEAD_LOST"
+    AI_SUPPORT_QUERY = "AI_SUPPORT_QUERY"
+    AI_SUPPORT_RESOLVED = "AI_SUPPORT_RESOLVED"
+    AI_ESCALATION_CREATED = "AI_ESCALATION_CREATED"
+    MARKETING_CAMPAIGN_STARTED = "MARKETING_CAMPAIGN_STARTED"
+    MARKETING_CAMPAIGN_COMPLETED = "MARKETING_CAMPAIGN_COMPLETED"
+    BLOG_POST_PUBLISHED = "BLOG_POST_PUBLISHED"
+    NEWSLETTER_SUBSCRIBED = "NEWSLETTER_SUBSCRIBED"
+    WEBSITE_SIGNUP = "WEBSITE_SIGNUP"
 
 
 class SchedulerLogStatus(str, Enum):
@@ -625,3 +642,45 @@ class TicketPriority(str, Enum):
     MEDIUM = "medium"    # Srednji
     HIGH = "high"        # Visok
     URGENT = "urgent"    # Hitan
+
+
+# ============================================================================
+# SPRINT-12 FINAL - MARKETING, SALES & AUTOMATION
+# ============================================================================
+
+class PartnerStatus(str, Enum):
+    """
+    Partner account status
+    Serbian: Status partnera
+    """
+    ACTIVE = "active"            # Aktivan
+    PENDING = "pending"          # Na čekanju
+    SUSPENDED = "suspended"      # Suspendovan
+    TERMINATED = "terminated"    # Raskinut ugovor
+
+
+class LeadStatus(str, Enum):
+    """
+    Sales lead status (CRM pipeline)
+    Serbian: Status potencijalnog klijenta
+    """
+    NEW = "new"                      # Novi
+    CONTACTED = "contacted"          # Kontaktiran
+    QUALIFIED = "qualified"          # Kvalifikovan
+    DEMO_SCHEDULED = "demo_scheduled"  # Zakazan demo
+    TRIAL = "trial"                  # Probni period
+    NEGOTIATION = "negotiation"      # Pregovori
+    CLOSED_WON = "closed_won"        # Dobijen
+    CLOSED_LOST = "closed_lost"      # Izgubljen
+
+
+class SupportQueryType(str, Enum):
+    """
+    AI support query classification
+    Serbian: Tip upita podrške
+    """
+    TECHNICAL = "technical"              # Tehnički
+    BILLING = "billing"                  # Fakturisanje
+    FEATURE_REQUEST = "feature_request"  # Zahtev za funkciju
+    ONBOARDING = "onboarding"            # Onboarding
+    GENERAL = "general"                  # Opšte
