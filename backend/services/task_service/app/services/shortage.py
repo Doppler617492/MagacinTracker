@@ -14,7 +14,7 @@ from app_common.events import publish
 from app_common.logging import get_logger
 
 from ..models import Trebovanje, TrebovanjeStavka, Zaduznica, ZaduznicaStavka
-from ..models.enums import AuditAction, DiscrepancyStatus, TrebovanjeItemStatus, TrebovanjeStatus
+from ..models.enums import AuditAction, DiscrepancyStatus, PartialCompletionReason, TrebovanjeItemStatus, TrebovanjeStatus
 from ..schemas.shortage import (
     CompleteDocumentRequest,
     CompleteDocumentResponse,
@@ -27,8 +27,15 @@ from ..schemas.shortage import (
     ShortPickRequest,
     ShortPickResponse,
 )
+from ..schemas.partial import (
+    PartialCompleteRequest,
+    PartialCompleteResponse,
+    MarkirajPreostaloRequest,
+    get_reason_display,
+)
 from .audit import record_audit
 from .catalog import CatalogService
+from .shortage_partial import complete_partial as _complete_partial, markiraj_preostalo as _markiraj_preostalo
 
 logger = get_logger(__name__)
 
