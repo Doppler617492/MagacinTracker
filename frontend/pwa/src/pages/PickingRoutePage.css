@@ -1,0 +1,291 @@
+/* PickingRoutePage - Manhattan Active WMS style */
+
+.picking-route-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 20px;
+}
+
+.picking-route-header {
+  background: #fff;
+  padding: 16px;
+  border-bottom: 2px solid #d0d0d0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.picking-route-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.route-progress {
+  background: #fff;
+  margin: 16px;
+  padding: 16px;
+  border: 2px solid #d0d0d0;
+  border-radius: 4px;
+}
+
+.progress-bar {
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1976d2, #42a5f5);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.route-stats {
+  display: flex;
+  gap: 12px;
+  margin: 0 16px 16px 16px;
+}
+
+.stat {
+  flex: 1;
+  background: #fff;
+  border: 2px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-icon {
+  font-size: 24px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1976d2;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
+.current-task-section {
+  margin: 0 16px 24px 16px;
+}
+
+.current-task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.current-task-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.task-sequence {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1976d2;
+  background: #e3f2fd;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+
+.current-task-card {
+  background: #fff;
+  border: 3px solid #1976d2;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.task-location {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.location-code-huge {
+  font-family: 'Courier New', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1976d2;
+}
+
+.location-path {
+  font-size: 14px;
+  color: #666;
+}
+
+.task-article {
+  margin-bottom: 16px;
+}
+
+.article-code {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.article-naziv {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.article-quantity {
+  font-size: 14px;
+  color: #666;
+}
+
+.article-quantity strong {
+  font-size: 20px;
+  color: #1976d2;
+  font-weight: 700;
+}
+
+.complete-task-button {
+  width: 100%;
+  background: #43a047;
+  color: #fff;
+  border: none;
+  padding: 16px;
+  border-radius: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 56px;
+}
+
+.task-completed-badge {
+  background: #43a047;
+  color: #fff;
+  padding: 16px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.remaining-tasks-section {
+  margin: 0 16px;
+}
+
+.remaining-tasks-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-item {
+  background: #fff;
+  border: 2px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.task-item:hover {
+  border-color: #1a1a1a;
+}
+
+.task-item.current {
+  border-color: #1976d2;
+  background: #e3f2fd;
+}
+
+.task-item.completed {
+  opacity: 0.6;
+  background: #f5f5f5;
+}
+
+.task-sequence-badge {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1976d2;
+  min-width: 30px;
+  text-align: center;
+}
+
+.task-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.task-location-code {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  min-width: 80px;
+}
+
+.task-article-code {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #666;
+  flex: 1;
+}
+
+.task-quantity {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.task-check {
+  font-size: 20px;
+  color: #43a047;
+}
+
+.picking-route-loading,
+.picking-route-error {
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+}
+
+.picking-route-error {
+  color: #d32f2f;
+}
+
