@@ -79,6 +79,7 @@ class AuditAction(str, Enum):
     # Business actions
     import_created = "import.created"
     trebovanje_imported = "trebovanje.imported"
+    trebovanje_deleted = "trebovanje.deleted"
     zaduznica_assigned = "zaduznica.assigned"
     zaduznica_reassigned = "zaduznica.reassigned"
     scan_recorded = "scan.recorded"
@@ -110,3 +111,37 @@ class SchedulerLogStatus(str, Enum):
     suggested = "suggested"
     accepted = "accepted"
     override = "override"
+
+
+# ============================================================================
+# PANTHEON ERP INTEGRATION ENUMS
+# ============================================================================
+
+class SubjectType(str, Enum):
+    """Subject/Partner type classification"""
+    SUPPLIER = "supplier"
+    CUSTOMER = "customer"
+    WAREHOUSE = "warehouse"
+
+
+class DocumentDirection(str, Enum):
+    """Document direction (inbound/outbound)"""
+    INBOUND = "inbound"
+    OUTBOUND = "outbound"
+
+
+class DocumentItemStatus(str, Enum):
+    """Document item processing status"""
+    NEW = "new"
+    PARTIAL = "partial"
+    DONE = "done"
+
+
+class SyncAction(str, Enum):
+    """Pantheon sync audit actions"""
+    CATALOG_SYNC = "CATALOG_SYNC"
+    SUBJECTS_SYNC = "SUBJECTS_SYNC"
+    ISSUE_SYNC = "ISSUE_SYNC"
+    RECEIPT_SYNC = "RECEIPT_SYNC"
+    CATALOG_LOOKUP_API = "CATALOG_LOOKUP_API"
+    WMS_FLAG_SET = "WMS_FLAG_SET"

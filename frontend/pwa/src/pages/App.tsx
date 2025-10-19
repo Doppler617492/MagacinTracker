@@ -1,15 +1,23 @@
 import { useEffect, useState } from "react";
 import { Layout } from "../components/Layout";
-import TaskDetailPage from "./TaskDetailPage";
-import TasksPage from "./TasksPage";
-import ReportsPage from "./ReportsPage";
-import SettingsPage from "./SettingsPage";
-import LoginPage from "./LoginPage";
+import HomePageWhite from "./HomePageWhite";
+import UnifiedTasksPage from "./UnifiedTasksPage";
+import TaskDetailPageWhite from "./TaskDetailPageWhite";
+import StockCountPageWhite from "./StockCountPageWhite";
+import ScanPickPageWhite from "./ScanPickPageWhite";
+import LookupPageWhite from "./LookupPageWhite";
+import ExceptionsPageWhite from "./ExceptionsPageWhite";
+import ReportsPageWhite from "./ReportsPageWhite";
+import SettingsPageWhite from "./SettingsPageWhite";
+import LoginPageWhite from "./LoginPageWhite";
 import OfflineQueueComponent from "../components/OfflineQueue";
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { ensureAuth, isAuthenticated } from "../api";
+import { HeaderProvider } from "../contexts/HeaderContext";
+import { useTranslation } from "../hooks/useTranslation";
 
 const App = () => {
+  const t = useTranslation('sr');
   const [ready, setReady] = useState(false);
   const [authChecked, setAuthChecked] = useState(0); // Force re-check
   const location = useLocation();
@@ -18,7 +26,8 @@ const App = () => {
     ensureAuth()
       .then(() => setReady(true))
       .catch((error) => {
-        console.error("Auth bootstrap failed", error);
+        // Expected on first load before login; keep noise low
+        console.warn("Auth bootstrap skipped (no token)");
         setReady(true); // Still show the app, but user will see login page
       });
   }, []);
@@ -29,18 +38,18 @@ const App = () => {
   }, [location]);
 
   if (!ready) {
-    return <div className="card">Priprema aplikacije...</div>;
+    return <div className="card">{t.login.preparingApp}</div>;
   }
 
   const authenticated = isAuthenticated();
 
   return (
-    <>
+    <HeaderProvider>
       <Routes>
         <Route 
           path="/login" 
           element={
-            authenticated ? <Navigate to="/" replace /> : <LoginPage />
+            authenticated ? <Navigate to="/" replace /> : <LoginPageWhite />
           } 
         />
         <Route 
@@ -48,15 +57,22 @@ const App = () => {
             authenticated ? <Layout /> : <Navigate to="/login" replace />
           }
         >
-          <Route index element={<TasksPage />} />
-          <Route path="tasks/:id" element={<TaskDetailPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route index element={<HomePageWhite />} />
+          <Route path="tasks" element={<UnifiedTasksPage />} />
+          <Route path="tasks/:id" element={<TaskDetailPageWhite />} />
+          <Route path="scan-pick" element={<ScanPickPageWhite />} />
+          <Route path="manual-entry" element={<UnifiedTasksPage />} />
+          <Route path="stock-count" element={<StockCountPageWhite />} />
+          <Route path="lookup" element={<LookupPageWhite />} />
+          <Route path="exceptions" element={<ExceptionsPageWhite />} />
+          <Route path="history" element={<ReportsPageWhite />} />
+          <Route path="reports" element={<ReportsPageWhite />} />
+          <Route path="settings" element={<SettingsPageWhite />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <OfflineQueueComponent />
-    </>
+    </HeaderProvider>
   );
 };
 

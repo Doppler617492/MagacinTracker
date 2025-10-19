@@ -1,0 +1,640 @@
+/* WMS Header Styles - Enterprise White Theme */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&display=swap');
+
+.wms-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.wms-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  min-height: 56px;
+  max-width: 100%;
+  gap: 12px;
+}
+
+/* Left Section: Logo & Team */
+.wms-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wms-header-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.wms-header-logo:hover {
+  background: #F3F4F6;
+}
+
+.wms-logo-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #0D3C6C 0%, #00A48E 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.wms-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.wms-logo-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0D3C6C;
+}
+
+.wms-logo-subtitle {
+  font-size: 10px;
+  font-weight: 500;
+  color: #6B7280;
+  letter-spacing: 0.5px;
+}
+
+.wms-header-team {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wms-team-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0D3C6C;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wms-team-members {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6B7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Center Section: Shift Timer */
+.wms-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.wms-shift-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
+  border: 1px solid #DBEAFE;
+  border-radius: 8px;
+}
+
+.wms-timer-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wms-timer-icon {
+  color: #0D3C6C;
+  flex-shrink: 0;
+}
+
+.wms-timer-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0D3C6C;
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 1px;
+}
+
+.wms-shift-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+}
+
+.wms-shift-badge {
+  background: #0D3C6C;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wms-break-notice {
+  color: #F59E0B;
+  font-weight: 600;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Right Section: Status & Actions */
+.wms-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.wms-status-indicators {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wms-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wms-status-badge.status-online {
+  background: #D1FAE5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+}
+
+.wms-status-badge.status-offline {
+  background: #F3F4F6;
+  color: #6B7280;
+  border: 1px solid #D1D5DB;
+}
+
+.wms-status-badge.status-synced {
+  background: #D1FAE5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+}
+
+.wms-status-badge.status-pending {
+  background: #FEF3C7;
+  color: #D97706;
+  border: 1px solid #FDE68A;
+}
+
+.wms-status-badge.status-syncing {
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+}
+
+.wms-status-badge.status-battery {
+  background: #F3F4F6;
+  color: #4B5563;
+  border: 1px solid #D1D5DB;
+}
+
+.wms-status-badge.status-battery.status-low {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}
+
+.wms-status-text {
+  font-size: 11px;
+}
+
+/* Header Actions */
+.wms-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wms-action-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  color: #4A4A4A;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.wms-action-btn:hover {
+  background: #0D3C6C;
+  border-color: #0D3C6C;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(13, 60, 108, 0.2);
+}
+
+.wms-action-btn:active {
+  transform: translateY(0);
+}
+
+.wms-profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0D3C6C 0%, #00A48E 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  border: 2px solid #E5E7EB;
+  transition: all 0.2s;
+}
+
+.wms-profile-avatar:hover {
+  border-color: #0D3C6C;
+  box-shadow: 0 2px 8px rgba(13, 60, 108, 0.3);
+  transform: scale(1.05);
+}
+
+/* Mobile Menu Button */
+.wms-mobile-menu-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  color: #4A4A4A;
+  cursor: pointer;
+}
+
+/* Mobile Menu */
+.wms-mobile-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-top: 1px solid #E5E7EB;
+  padding: 16px;
+  z-index: 999;
+}
+
+.wms-mobile-menu-section {
+  margin-bottom: 16px;
+}
+
+.wms-mobile-menu-section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.wms-mobile-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wms-mobile-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #F9FAFB;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.wms-mobile-status-item.online {
+  color: #047857;
+}
+
+.wms-mobile-status-item.offline {
+  color: #6B7280;
+}
+
+.wms-mobile-status-item.synced {
+  color: #047857;
+}
+
+.wms-mobile-status-item.pending {
+  color: #D97706;
+}
+
+.wms-mobile-menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wms-mobile-menu-actions button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.wms-mobile-menu-actions button:hover {
+  background: #F3F4F6;
+  border-color: #D1D5DB;
+}
+
+.wms-mobile-menu-actions button.logout-btn {
+  color: #DC2626;
+  border-color: #FEE2E2;
+}
+
+.wms-mobile-menu-actions button.logout-btn:hover {
+  background: #FEE2E2;
+}
+
+/* Notifications Panel */
+.wms-notifications-panel {
+  position: fixed;
+  top: 56px;
+  right: 0;
+  width: 100%;
+  max-width: 360px;
+  height: calc(100vh - 56px);
+  background: white;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
+  z-index: 998;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.wms-notifications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.wms-notifications-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0D3C6C;
+  margin: 0;
+}
+
+.wms-clear-all-btn {
+  background: none;
+  border: none;
+  color: #00A48E;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.wms-clear-all-btn:hover {
+  background: #F3F4F6;
+}
+
+.wms-notifications-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.wms-no-notifications {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #9CA3AF;
+  font-size: 14px;
+}
+
+.wms-notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.wms-notification-item.unread {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+
+.wms-notification-item:hover {
+  background: #F3F4F6;
+  border-color: #D1D5DB;
+}
+
+.wms-notification-icon {
+  flex-shrink: 0;
+  color: #0D3C6C;
+}
+
+.wms-notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.wms-notification-message {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.wms-notification-time {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+
+.wms-notification-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  background: #00A48E;
+  border-radius: 50%;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .wms-header-container {
+    padding: 6px 12px;
+    min-height: 56px;
+  }
+
+  .wms-header-team,
+  .wms-header-center,
+  .wms-status-indicators {
+    display: none;
+  }
+
+  .wms-header-actions {
+    gap: 4px;
+  }
+
+  .wms-action-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .wms-profile-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .wms-mobile-menu-btn {
+    display: flex;
+  }
+
+  .wms-mobile-menu {
+    display: block;
+  }
+
+  .wms-logo-text {
+    display: none;
+  }
+
+  .wms-status-text {
+    display: none;
+  }
+
+  .wms-notifications-panel {
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .wms-header-team {
+    max-width: 140px;
+  }
+
+  .wms-status-text {
+    display: none;
+  }
+}
+
+@media (min-width: 1025px) {
+  .wms-header-container {
+    padding: 8px 24px;
+    min-height: 64px;
+  }
+
+  .wms-logo-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .wms-timer-value {
+    font-size: 20px;
+  }
+}
+
+/* Accessibility */
+.wms-header button:focus,
+.wms-header [role="button"]:focus {
+  outline: 2px solid #0D3C6C;
+  outline-offset: 2px;
+}
+
+/* Offline Banner */
+.wms-offline-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #DC2626;
+  color: white;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 1001;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+

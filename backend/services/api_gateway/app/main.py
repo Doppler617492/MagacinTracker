@@ -9,7 +9,7 @@ from app_common.logging import configure_logging, get_logger
 from app_common.middleware import CorrelationIdMiddleware
 
 from .config import settings
-from .routers import ai, auth, catalog, edge, health, import_router, kafka, kpi, reports, trebovanja, tv, worker, zaduznice
+from .routers import ai, auth, catalog, counts, edge, exceptions, health, import_router, kafka, kpi, pantheon_sync, reports, stream, task_analytics, teams, trebovanja, tv, worker, zaduznice
 from .routers import user_management
 from .dependencies.http import create_http_clients
 
@@ -45,9 +45,15 @@ api.include_router(tv.router, prefix=settings.api_prefix, tags=["tv"])
 api.include_router(kpi.router, prefix=f"{settings.api_prefix}/kpi", tags=["kpi"])
 api.include_router(ai.router, prefix=f"{settings.api_prefix}/ai", tags=["ai"])
 api.include_router(kafka.router, prefix=settings.api_prefix, tags=["kafka"])
+api.include_router(stream.router, prefix=settings.api_prefix, tags=["stream"])
+api.include_router(teams.router, prefix=settings.api_prefix, tags=["teams"])
 api.include_router(edge.router, prefix=settings.api_prefix, tags=["edge"])
-api.include_router(reports.router, prefix=settings.api_prefix, tags=["reports"])
+api.include_router(reports.router, prefix=f"{settings.api_prefix}/reports", tags=["reports"])
+api.include_router(task_analytics.router, prefix=f"{settings.api_prefix}", tags=["task-analytics"])
+api.include_router(pantheon_sync.router, prefix=f"{settings.api_prefix}/pantheon", tags=["pantheon-sync"])
 api.include_router(import_router.router, prefix=settings.api_prefix, tags=["import"])
+api.include_router(counts.router, prefix=settings.api_prefix, tags=["counts"])
+api.include_router(exceptions.router, prefix=settings.api_prefix, tags=["exceptions"])
 
 Instrumentator().instrument(api).expose(api, include_in_schema=False)
 
@@ -76,7 +82,7 @@ ws_connections_gauge = Gauge("socketio_connections", "Active Socket.IO connectio
 
 
 @sio.event
-async def connect(sid, environ):  # noqa: D401
+async def connect(sid, environ, auth):  # noqa: D401
     logger.info("socket.connect", sid=sid)
     ws_connections_gauge.inc()
 
@@ -89,7 +95,7 @@ async def disconnect(sid):  # noqa: D401
 
 @sio.event
 async def tv_delta(sid, data):
-    logger.info("socket.broadcast", event="tv_delta", payload=data)
+    logger.info("socket.broadcast", extra={"event": "tv_delta", "payload": data})
     await sio.emit("tv_delta", data)
 
 

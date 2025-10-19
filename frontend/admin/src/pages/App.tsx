@@ -24,6 +24,7 @@ import SchedulerPage from "./SchedulerPage";
 import CatalogPage from "./CatalogPage";
 import ImportPage from "./ImportPage";
 import AnalyticsPage from "./AnalyticsPage";
+import TaskAnalyticsPage from "./TaskAnalyticsPage";
 import ReportsPage from "./ReportsPage";
 import AIRecommendationsPage from "./AIRecommendationsPage";
 import AIModelDashboardPage from "./AIModelDashboardPage";
@@ -32,8 +33,9 @@ import LiveOpsDashboardPage from "./LiveOpsDashboardPage";
 import GlobalOpsDashboardPage from "./GlobalOpsDashboardPage";
 import UserManagementPage from "./UserManagementPage";
 import ShortageReportsPage from "./ShortageReportsPage";
+import TeamsPage from "./TeamsPage";
 import LoginPage from "./LoginPage";
-import { isAuthenticated, logout, fetchMe } from "../api";
+import { isAuthenticated, logout } from "../api";
 
 type StoredUser = {
   id?: string;
@@ -82,6 +84,11 @@ const AdminLayout = () => {
       label: <Link to="/analytics">Analitika</Link>
     },
     {
+      key: "/task-analytics",
+      icon: <BarChartOutlined />,
+      label: <Link to="/task-analytics">Analitika zadataka</Link>
+    },
+    {
       key: "/reports",
       icon: <FileTextOutlined />,
       label: <Link to="/reports">Izvještaji</Link>
@@ -115,6 +122,11 @@ const AdminLayout = () => {
       key: "/global-ops",
       icon: <SettingOutlined />,
       label: <Link to="/global-ops">Global Ops</Link>
+    },
+    {
+      key: "/teams",
+      icon: <TeamOutlined />,
+      label: <Link to="/teams">Timovi</Link>
     },
     {
       key: "/users",
@@ -239,12 +251,14 @@ const App = () => {
         <Route path="catalog" element={<CatalogPage />} />
         <Route path="import" element={<ImportPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="task-analytics" element={<TaskAnalyticsPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="ai-recommendations" element={<AIRecommendationsPage />} />
         <Route path="ai-models" element={<AIModelDashboardPage />} />
         <Route path="global-ai-hub" element={<GlobalAIHubPage />} />
         <Route path="live-ops" element={<LiveOpsDashboardPage />} />
         <Route path="global-ops" element={<GlobalOpsDashboardPage />} />
+        <Route path="teams" element={<TeamsPage />} />
         <Route path="users" element={<UserManagementPage />} />
         <Route path="shortages" element={<ShortageReportsPage />} />
       </Route>

@@ -21,6 +21,8 @@ class Settings(BaseSettings):
                 "http://localhost:5173", 
                 "http://localhost:4173", 
                 "http://localhost:5130",
+                "http://localhost:5131",
+                "http://localhost:5132",
                 "http://localhost:3000"
             ]
 

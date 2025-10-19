@@ -48,6 +48,9 @@ def require_roles(allowed: list[str]) -> Callable[[UserContext], UserContext]:
     allowed_set = set(allowed)
 
     async def dependency(context: UserContext = Depends(get_user_context)) -> UserContext:
+        # ADMIN role has access to everything
+        if Role.ADMIN in context.roles:
+            return context
         if allowed_set and context.roles.isdisjoint(allowed_set):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role")
         return context

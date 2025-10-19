@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app_common.db import get_db
 from ..dependencies.auth import require_roles
 from ..models.enums import Role
+from .teams import get_any_user
 
 from ..schemas.kpi import (
     CSVExportRequest,
@@ -31,7 +32,7 @@ async def get_kpi_summary(
     radnik_id: Optional[uuid.UUID] = Query(None, description="Filter by radnik ID"),
     days: int = Query(7, ge=1, le=365, description="Number of days to analyze"),
     session: AsyncSession = Depends(get_db),
-    _: None = Depends(require_roles([Role.SEF, Role.MENADZER])),
+    _: dict = Depends(get_any_user),
 ) -> KPISummaryResponse:
     """Get KPI summary with filtering options."""
     kpi_service = KPIService(session)
@@ -45,7 +46,7 @@ async def get_daily_stats(
     radnik_id: Optional[uuid.UUID] = Query(None, description="Filter by radnik ID"),
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     session: AsyncSession = Depends(get_db),
-    _: None = Depends(require_roles([Role.SEF, Role.MENADZER])),
+    _: dict = Depends(get_any_user),
 ) -> List[DailyStatsResponse]:
     """Get daily statistics for the specified period."""
     kpi_service = KPIService(session)
@@ -59,7 +60,7 @@ async def get_top_workers(
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     limit: int = Query(5, ge=1, le=50, description="Number of top workers to return"),
     session: AsyncSession = Depends(get_db),
-    _: None = Depends(require_roles([Role.SEF, Role.MENADZER])),
+    _: dict = Depends(get_any_user),
 ) -> List[TopWorkerResponse]:
     """Get top performing workers by task completion."""
     kpi_service = KPIService(session)
@@ -73,7 +74,7 @@ async def get_manual_completion_stats(
     radnik_id: Optional[uuid.UUID] = Query(None, description="Filter by radnik ID"),
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     session: AsyncSession = Depends(get_db),
-    _: None = Depends(require_roles([Role.SEF, Role.MENADZER])),
+    _: dict = Depends(get_any_user),
 ) -> ManualCompletionStatsResponse:
     """Get manual completion statistics."""
     kpi_service = KPIService(session)
@@ -85,7 +86,7 @@ async def get_manual_completion_stats(
 async def export_kpi_data(
     request: CSVExportRequest,
     session: AsyncSession = Depends(get_db),
-    _: None = Depends(require_roles([Role.SEF, Role.MENADZER])),
+    _: dict = Depends(get_any_user),
 ) -> CSVExportResponse:
     """Export KPI data to CSV format."""
     # This will be implemented in the next phase

@@ -1,0 +1,344 @@
+/* White Enterprise Theme for Magacin Worker PWA */
+/* Optimized for Zebra/Honeywell Rugged Handhelds */
+
+:root {
+  color-scheme: light;
+  
+  /* Color Palette */
+  --color-background: #F5F7FA;
+  --color-card-bg: #FFFFFF;
+  --color-panel-bg: #FAFBFC;
+  
+  --color-primary: #0066CC;
+  --color-primary-hover: #0052A3;
+  --color-primary-light: #E6F2FF;
+  
+  --color-accent: #00875A;
+  --color-accent-hover: #006644;
+  --color-accent-light: #E3FCEF;
+  
+  --color-text: #172B4D;
+  --color-text-secondary: #5E6C84;
+  --color-text-muted: #8993A4;
+  
+  --color-success: #00875A;
+  --color-warning: #FF991F;
+  --color-error: #DE350B;
+  --color-info: #0052CC;
+  
+  --color-border: #DFE1E6;
+  --color-border-hover: #C1C7D0;
+  --color-divider: #EBECF0;
+  
+  --color-hover: #F4F5F7;
+  --color-active: #E6F2FF;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(9, 30, 66, 0.08);
+  --shadow-md: 0 2px 4px 0 rgba(9, 30, 66, 0.08), 0 0 1px 0 rgba(9, 30, 66, 0.08);
+  --shadow-lg: 0 4px 8px 0 rgba(9, 30, 66, 0.1), 0 0 1px 0 rgba(9, 30, 66, 0.06);
+  --shadow-card: 0 1px 3px 0 rgba(9, 30, 66, 0.08), 0 0 0 1px rgba(9, 30, 66, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Disable pull-to-refresh on mobile */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Ant Design overrides for white theme */
+.ant-btn-primary {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.ant-btn-primary:hover {
+  background-color: var(--color-primary-hover) !important;
+  border-color: var(--color-primary-hover) !important;
+}
+
+.ant-progress-bg {
+  background-color: var(--color-accent) !important;
+}
+
+.ant-progress-inner {
+  background-color: var(--color-divider) !important;
+}
+
+.ant-tag {
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.ant-input,
+.ant-select-selector,
+.ant-input-number {
+  border-color: var(--color-border) !important;
+  background: var(--color-card-bg) !important;
+}
+
+.ant-input:hover,
+.ant-select-selector:hover {
+  border-color: var(--color-border-hover) !important;
+}
+
+.ant-input:focus,
+.ant-select-focused .ant-select-selector {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px var(--color-primary-light) !important;
+}
+
+.ant-modal-content {
+  background: var(--color-card-bg) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.ant-card {
+  background: var(--color-card-bg);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+/* Professional Cards */
+.wms-card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wms-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-hover);
+}
+
+.wms-card:active {
+  transform: scale(0.98);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Icon Cards */
+.wms-icon-card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-height: 120px;
+  justify-content: center;
+}
+
+.wms-icon-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.wms-icon-card:active {
+  transform: scale(0.96);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Buttons */
+.wms-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 40px;
+}
+
+.wms-btn-primary {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.wms-btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.wms-btn-success {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.wms-btn-success:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.wms-btn-secondary {
+  background: var(--color-card-bg);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.wms-btn-secondary:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border-hover);
+}
+
+/* Status Badges */
+.wms-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.wms-badge-new {
+  background: #E6F2FF;
+  color: #0052CC;
+}
+
+.wms-badge-in-progress {
+  background: #FFF4E6;
+  color: #FF991F;
+}
+
+.wms-badge-partial {
+  background: #FFEBE6;
+  color: #DE350B;
+}
+
+.wms-badge-done {
+  background: #E3FCEF;
+  color: #00875A;
+}
+
+/* Touch targets */
+button,
+a,
+input,
+select,
+textarea {
+  min-height: 48px;
+}
+
+/* Focus states */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-border: #999;
+    --color-text: #000;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Loading state */
+.wms-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--color-text-secondary);
+}
+
+/* Empty state */
+.wms-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--color-text-secondary);
+}
+
+.wms-empty-icon {
+  font-size: 48px;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+}
+
+.wms-empty-text {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+.wms-empty-description {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+

@@ -11,12 +11,32 @@ import {
   Tag,
   Typography,
   Alert,
-  Divider
+  Divider,
+  Radio
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import client, { getSchedulerSuggestion, cancelSchedulerSuggestion } from "../api";
+import client, { getSchedulerSuggestion, cancelSchedulerSuggestion, getTeams } from "../api";
+
+// Team interface for TypeScript
+interface TeamMember {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  shift: string;
+  active: boolean;
+  worker1: TeamMember;
+  worker2: TeamMember;
+  created_at: string;
+}
+import { useWebSocket } from "../hooks/useWebSocket";
 
 const { Title, Text } = Typography;
 
@@ -98,11 +118,15 @@ const SchedulerPage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [suggestion, setSuggestion] = useState<SchedulerSuggestion | null>(null);
   const [overrideMode, setOverrideMode] = useState(false);
+  const [assignmentMode, setAssignmentMode] = useState<'individual' | 'team'>('individual');
+
+  // Use WebSocket for real-time updates
+  useWebSocket(["trebovanja", "trebovanje"]);
 
   const { data, isLoading } = useQuery<TrebovanjeListResponse>({
     queryKey: ["trebovanja"],
     queryFn: fetchTrebovanja,
-    refetchInterval: 15000, // Refetch every 15 seconds to see worker updates
+    // Remove polling interval - WebSocket will trigger updates
   });
 
   // Fetch selected trebovanje details
@@ -124,6 +148,13 @@ const SchedulerPage = () => {
     gcTime: 0 // Don't cache
   });
 
+  // Fetch teams
+  const { data: teams } = useQuery<Team[]>({
+    queryKey: ["teams"],
+    queryFn: getTeams,
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
   const MAGACIONERI = useMemo(() => {
     if (!usersData?.users) return [];
     const result = usersData.users.map((user: any) => ({
@@ -133,6 +164,15 @@ const SchedulerPage = () => {
     console.log("🔍 Scheduler Page - MAGACIONERI list:", result);
     return result;
   }, [usersData]);
+
+  const TEAMS = useMemo(() => {
+    if (!teams) return [];
+    return teams.map((team) => ({
+      value: team.id,
+      label: `${team.name} (${team.worker1.first_name} & ${team.worker2.first_name}) - Smjena ${team.shift}`,
+      team: team
+    }));
+  }, [teams]);
 
   const suggestionMutation = useMutation({
     mutationFn: getSchedulerSuggestion,
@@ -252,16 +292,57 @@ const SchedulerPage = () => {
       }
     }
 
-    const payload: ZaduznicaCreatePayload = {
-      trebovanje_id: selectedTrebovanjeId,
-      assignments: [
+    let assignments: ZaduznicaAssignmentPayload[] = [];
+
+    if (assignmentMode === 'individual') {
+      // Individual assignment
+      assignments = [{
+        magacioner_id: values.magacionerId,
+        priority: values.priority,
+        due_at: dueAtIso,
+        items
+      }];
+    } else {
+      // Team assignment - create zaduznica for both team members
+      const selectedTeam = TEAMS.find(t => t.value === values.teamId)?.team;
+      if (!selectedTeam) {
+        message.error("Tim nije pronađen");
+        return;
+      }
+
+      // Split items equally between team members (50% each)
+      const itemsWorker1 = items.map((item: any) => ({
+        trebovanje_stavka_id: item.trebovanje_stavka_id,
+        quantity: item.quantity / 2
+      }));
+      
+      const itemsWorker2 = items.map((item: any) => ({
+        trebovanje_stavka_id: item.trebovanje_stavka_id,
+        quantity: item.quantity / 2
+      }));
+
+      // Assign to both team members with the same team_id
+      assignments = [
         {
-          magacioner_id: values.magacionerId,
+          magacioner_id: selectedTeam.worker1.id,
           priority: values.priority,
           due_at: dueAtIso,
-          items
+          items: itemsWorker1
+        },
+        {
+          magacioner_id: selectedTeam.worker2.id,
+          priority: values.priority,
+          due_at: dueAtIso,
+          items: itemsWorker2
         }
-      ]
+      ];
+      
+      message.info(`Dodjeljivanje timu: ${selectedTeam.name} (${selectedTeam.worker1.first_name} & ${selectedTeam.worker2.first_name}) - po 50% svakom radniku`);
+    }
+
+    const payload: ZaduznicaCreatePayload = {
+      trebovanje_id: selectedTrebovanjeId,
+      assignments
     };
 
     await assignMutation.mutateAsync(payload);
@@ -428,18 +509,39 @@ const SchedulerPage = () => {
 
           {overrideMode && (
             <Card title="Ručno dodeljivanje" size="small">
+              <Space direction="vertical" style={{ width: "100%", marginBottom: "16px" }}>
+                <Text strong>Tip dodjeljivanja:</Text>
+                <Radio.Group 
+                  value={assignmentMode} 
+                  onChange={(e) => setAssignmentMode(e.target.value)}
+                  buttonStyle="solid"
+                >
+                  <Radio.Button value="individual">Pojedinačno</Radio.Button>
+                  <Radio.Button value="team">Tim</Radio.Button>
+                </Radio.Group>
+              </Space>
               <Form
                 layout="vertical"
                 onFinish={handleOverrideAssignment}
                 initialValues={{ priority: "normal" }}
               >
-                <Form.Item
-                  label="Magacioner"
-                  name="magacionerId"
-                  rules={[{ required: true, message: "Odaberite magacionera" }]}
-                >
-                  <Select options={MAGACIONERI} placeholder="Izaberite magacionera" />
-                </Form.Item>
+                {assignmentMode === 'individual' ? (
+                  <Form.Item
+                    label="Magacioner"
+                    name="magacionerId"
+                    rules={[{ required: true, message: "Odaberite magacionera" }]}
+                  >
+                    <Select options={MAGACIONERI} placeholder="Izaberite magacionera" />
+                  </Form.Item>
+                ) : (
+                  <Form.Item
+                    label="Tim"
+                    name="teamId"
+                    rules={[{ required: true, message: "Odaberite tim" }]}
+                  >
+                    <Select options={TEAMS} placeholder="Izaberite tim" />
+                  </Form.Item>
+                )}
                 <Form.Item label="Prioritet" name="priority">
                   <Select options={PRIORITIES} />
                 </Form.Item>

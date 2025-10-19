@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from httpx import AsyncClient
 
 from app_common.logging import get_logger
-from ..dependencies.http import get_task_client
-from ..services.auth import require_roles
+from ..dependencies.http import build_forward_headers, get_task_client
+from ..services.auth import get_current_user, require_roles
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -22,7 +22,7 @@ async def get_kpi_summary(
     radnik_id: Optional[uuid.UUID] = Query(None, description="Filter by radnik ID"),
     days: int = Query(7, ge=1, le=365, description="Number of days to analyze"),
     task_client: AsyncClient = Depends(get_task_client),
-    _: None = Depends(require_roles(["sef", "menadzer"])),
+    user: dict = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Get KPI summary with filtering options."""
     params = {"days": days}
@@ -31,12 +31,7 @@ async def get_kpi_summary(
     if radnik_id:
         params["radnik_id"] = str(radnik_id)
     
-    # Forward Authorization header
-    auth_header = request.headers.get("Authorization")
-    headers = {}
-    if auth_header:
-        headers["Authorization"] = auth_header
-    
+    headers = build_forward_headers(request, user)
     response = await task_client.get("/api/kpi/summary", params=params, headers=headers)
     response.raise_for_status()
     return response.json()
@@ -49,7 +44,7 @@ async def get_daily_stats(
     radnik_id: Optional[uuid.UUID] = Query(None, description="Filter by radnik ID"),
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     task_client: AsyncClient = Depends(get_task_client),
-    _: None = Depends(require_roles(["sef", "menadzer"])),
+    user: dict = Depends(get_current_user),
 ) -> List[Dict[str, Any]]:
     """Get daily statistics for the specified period."""
     params = {"days": days}
@@ -58,12 +53,7 @@ async def get_daily_stats(
     if radnik_id:
         params["radnik_id"] = str(radnik_id)
     
-    # Forward Authorization header
-    auth_header = request.headers.get("Authorization")
-    headers = {}
-    if auth_header:
-        headers["Authorization"] = auth_header
-    
+    headers = build_forward_headers(request, user)
     response = await task_client.get("/api/kpi/daily-stats", params=params, headers=headers)
     response.raise_for_status()
     return response.json()
@@ -76,19 +66,14 @@ async def get_top_workers(
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     limit: int = Query(5, ge=1, le=50, description="Number of top workers to return"),
     task_client: AsyncClient = Depends(get_task_client),
-    _: None = Depends(require_roles(["sef", "menadzer"])),
+    user: dict = Depends(get_current_user),
 ) -> List[Dict[str, Any]]:
     """Get top performing workers by task completion."""
     params = {"days": days, "limit": limit}
     if radnja_id:
         params["radnja_id"] = str(radnja_id)
     
-    # Forward Authorization header
-    auth_header = request.headers.get("Authorization")
-    headers = {}
-    if auth_header:
-        headers["Authorization"] = auth_header
-    
+    headers = build_forward_headers(request, user)
     response = await task_client.get("/api/kpi/top-workers", params=params, headers=headers)
     response.raise_for_status()
     return response.json()
@@ -101,7 +86,7 @@ async def get_manual_completion_stats(
     radnik_id: Optional[uuid.UUID] = Query(None, description="Filter by radnik ID"),
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     task_client: AsyncClient = Depends(get_task_client),
-    _: None = Depends(require_roles(["sef", "menadzer"])),
+    user: dict = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Get manual completion statistics."""
     params = {"days": days}
@@ -110,12 +95,7 @@ async def get_manual_completion_stats(
     if radnik_id:
         params["radnik_id"] = str(radnik_id)
     
-    # Forward Authorization header
-    auth_header = request.headers.get("Authorization")
-    headers = {}
-    if auth_header:
-        headers["Authorization"] = auth_header
-    
+    headers = build_forward_headers(request, user)
     response = await task_client.get("/api/kpi/manual-completion", params=params, headers=headers)
     response.raise_for_status()
     return response.json()
@@ -125,7 +105,7 @@ async def get_manual_completion_stats(
 async def export_kpi_data(
     request: Request,
     task_client: AsyncClient = Depends(get_task_client),
-    _: None = Depends(require_roles(["sef", "menadzer"])),
+    _: None = Depends(require_roles(["admin", "sef", "menadzer"])),
 ) -> Dict[str, Any]:
     """Export KPI data to CSV format."""
     # Forward the request body to task service

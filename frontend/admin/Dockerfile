@@ -1,12 +1,13 @@
+# syntax=docker/dockerfile:1.6
 FROM node:20 AS build
 WORKDIR /app
 COPY frontend/package.json package.json
 COPY frontend/admin/package.json admin/package.json
 COPY frontend/pwa/package.json pwa/package.json
 COPY frontend/tv/package.json tv/package.json
-RUN npm install
-# Force cache invalidation for source code changes
-ARG CACHEBUST=1
+## Faster, reproducible installs with cache mount
+RUN --mount=type=cache,target=/root/.npm npm install --no-audit --prefer-offline
+# Copy sources after deps to leverage caching
 COPY frontend ./
 RUN npm run build --workspace admin
 

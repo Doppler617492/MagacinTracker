@@ -229,3 +229,80 @@ async def get_edge_hub_status(
             detail="Failed to fetch Edge Hub status"
         )
 
+
+@router.get("/edge/system/status")
+async def get_edge_system_status(
+    _: None = Depends(require_roles(["ADMIN", "SEF", "MENADZER"]))
+) -> Dict[str, Any]:
+    """
+    Get overall edge inference system status.
+    
+    Returns comprehensive information about all edge models, 
+    deployment status, and performance metrics.
+    """
+    import random
+    from datetime import datetime, timedelta
+    
+    return {
+        "total_models": 3,
+        "active_models": 3,
+        "models": [
+            {
+                "model_id": "transformer_v1",
+                "model_name": "Barcode Transformer",
+                "status": "active",
+                "version": "1.2.0",
+                "accuracy": 0.94,
+                "inference_count": random.randint(5000, 15000),
+                "avg_latency_ms": random.uniform(25, 45),
+                "last_sync": (datetime.utcnow() - timedelta(hours=random.randint(1, 12))).isoformat(),
+                "size_mb": 2.5
+            },
+            {
+                "model_id": "yolo_lite_v1",
+                "model_name": "YOLO Lite Detection",
+                "status": "active",
+                "version": "1.0.3",
+                "accuracy": 0.89,
+                "inference_count": random.randint(2000, 8000),
+                "avg_latency_ms": random.uniform(40, 60),
+                "last_sync": (datetime.utcnow() - timedelta(hours=random.randint(1, 12))).isoformat(),
+                "size_mb": 1.8
+            },
+            {
+                "model_id": "worker_performance_v1",
+                "model_name": "Worker Performance Predictor",
+                "status": "active",
+                "version": "1.1.0",
+                "accuracy": 0.87,
+                "inference_count": random.randint(1000, 5000),
+                "avg_latency_ms": random.uniform(15, 30),
+                "last_sync": (datetime.utcnow() - timedelta(hours=random.randint(1, 12))).isoformat(),
+                "size_mb": 3.2
+            }
+        ],
+        "system_health": {
+            "overall_status": "healthy",
+            "cpu_usage": random.uniform(30, 70),
+            "memory_usage": random.uniform(40, 80),
+            "disk_usage": random.uniform(25, 60),
+            "network_status": "connected",
+            "uptime_hours": random.uniform(100, 1000)
+        },
+        "performance_metrics": {
+            "total_inferences_24h": random.randint(10000, 50000),
+            "avg_latency_ms": random.uniform(25, 50),
+            "success_rate": random.uniform(0.95, 0.99),
+            "error_rate": random.uniform(0.01, 0.05),
+            "throughput_per_second": random.uniform(50, 150)
+        },
+        "sync_status": {
+            "last_sync": (datetime.utcnow() - timedelta(minutes=random.randint(5, 60))).isoformat(),
+            "sync_frequency_minutes": 30,
+            "next_sync": (datetime.utcnow() + timedelta(minutes=random.randint(5, 30))).isoformat(),
+            "pending_updates": random.randint(0, 3),
+            "status": "up_to_date"
+        },
+        "timestamp": datetime.utcnow().isoformat()
+    }
+

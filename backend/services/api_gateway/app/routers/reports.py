@@ -10,12 +10,73 @@ from httpx import AsyncClient
 from pydantic import BaseModel, Field
 
 from app_common.logging import get_logger
-from ..services.auth import require_roles
+from ..services.auth import require_roles, get_current_user
 
-from ..dependencies.http import get_task_client
+from ..dependencies.http import build_forward_headers, get_task_client
 
 logger = get_logger(__name__)
 router = APIRouter()
+
+
+@router.get("/shortages")
+async def get_shortage_report(
+    request: Request,
+    user: dict = Depends(get_current_user),
+    task_client: AsyncClient = Depends(get_task_client),
+):
+    """
+    Get shortage report from task-service.
+    Proxies to /reports/shortages in task-service.
+    
+    Supports query parameters:
+    - from_date: Start date (YYYY-MM-DD)
+    - to_date: End date (YYYY-MM-DD)  
+    - radnja_id: Filter by store UUID
+    - magacioner_id: Filter by worker UUID
+    - discrepancy_status: Filter by status
+    - format: Output format (json or csv)
+    """
+    _enforce_roles(user, {"ADMIN", "MENADZER", "SEF"})
+    
+    # Forward query parameters
+    query_params = dict(request.query_params)
+    
+    # Build headers
+    headers = build_forward_headers(request, user)
+    
+    # Forward to task-service
+    response = await task_client.get(
+        "/api/reports/shortages",
+        params=query_params,
+        headers=headers,
+    )
+    
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+    
+    # Check if CSV format requested
+    if query_params.get("format") == "csv":
+        # Return CSV response with proper headers
+        from fastapi.responses import Response
+        return Response(
+            content=response.content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="shortage_report_{datetime.now().strftime("%Y%m%d")}.csv"'
+            }
+        )
+    
+    return response.json()
+
+
+def _enforce_roles(user: dict, allowed: set[str]) -> None:
+    """Check if user has one of the allowed roles."""
+    roles = set(str(r).lower() for r in (user.get("roles") or []))
+    if user.get("role"):
+        roles.add(str(user["role"]).lower())
+    allowed_lower = {r.lower() for r in allowed}
+    if roles.isdisjoint(allowed_lower):
+        raise HTTPException(status_code=403, detail="Insufficient role")
 
 
 class ReportChannel(str, Enum):
@@ -113,7 +174,7 @@ def calculate_next_send(frequency: ReportFrequency, time_hour: int, time_minute:
 async def create_report_schedule(
     request: Request,
     schedule_data: ReportScheduleCreate,
-    _: None = Depends(require_roles(["SEF", "MENADZER"])),
+    _: None = Depends(require_roles(["ADMIN", "SEF", "MENADZER"])),
 ) -> ReportSchedule:
     """Create a new report schedule."""
     schedule_id = str(uuid.uuid4())
@@ -156,7 +217,7 @@ async def create_report_schedule(
 
 @router.get("/schedules", response_model=List[ReportSchedule])
 async def get_report_schedules(
-    _: None = Depends(require_roles(["SEF", "MENADZER"])),
+    _: None = Depends(require_roles(["ADMIN", "SEF", "MENADZER"])),
 ) -> List[ReportSchedule]:
     """Get all report schedules."""
     return list(report_schedules.values())
@@ -165,7 +226,7 @@ async def get_report_schedules(
 @router.get("/schedules/{schedule_id}", response_model=ReportSchedule)
 async def get_report_schedule(
     schedule_id: str,
-    _: None = Depends(require_roles(["SEF", "MENADZER"])),
+    _: None = Depends(require_roles(["ADMIN", "SEF", "MENADZER"])),
 ) -> ReportSchedule:
     """Get a specific report schedule."""
     if schedule_id not in report_schedules:
@@ -179,7 +240,7 @@ async def update_report_schedule(
     request: Request,
     schedule_id: str,
     update_data: ReportScheduleUpdate,
-    _: None = Depends(require_roles(["SEF", "MENADZER"])),
+    _: None = Depends(require_roles(["ADMIN", "SEF", "MENADZER"])),
 ) -> ReportSchedule:
     """Update a report schedule."""
     if schedule_id not in report_schedules:
@@ -212,7 +273,7 @@ async def update_report_schedule(
 async def delete_report_schedule(
     request: Request,
     schedule_id: str,
-    _: None = Depends(require_roles(["SEF", "MENADZER"])),
+    _: None = Depends(require_roles(["ADMIN", "SEF", "MENADZER"])),
 ) -> Dict[str, str]:
     """Delete a report schedule."""
     if schedule_id not in report_schedules:
@@ -235,7 +296,7 @@ async def run_report_now(
     schedule_id: str,
     background_tasks: BackgroundTasks,
     run_request: Optional[ReportRunRequest] = None,
-    _: None = Depends(require_roles(["SEF", "MENADZER"])),
+    _: None = Depends(require_roles(["ADMIN", "SEF", "MENADZER"])),
 ) -> Dict[str, str]:
     """Run a report schedule immediately."""
     if schedule_id not in report_schedules:
@@ -411,7 +472,7 @@ async def send_slack_report(recipients: List[str], report_content: Dict[str, Any
 async def get_report_history(
     schedule_id: str,
     limit: int = 10,
-    _: None = Depends(require_roles(["SEF", "MENADZER"])),
+    _: None = Depends(require_roles(["ADMIN", "SEF", "MENADZER"])),
 ) -> Dict[str, Any]:
     """Get report sending history for a schedule."""
     if schedule_id not in report_schedules:

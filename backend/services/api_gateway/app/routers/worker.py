@@ -11,6 +11,24 @@ from ..services.auth import get_current_user, require_role
 router = APIRouter()
 
 
+@router.get("/worker/my-team", response_model=dict | None)
+async def get_worker_team(
+    request: Request,
+    user: dict = Depends(require_role("magacioner")),
+    client: httpx.AsyncClient = Depends(get_task_client),
+) -> dict | None:
+    """Get the current worker's team information."""
+    response = await client.get(
+        "/api/worker/my-team",
+        headers=build_forward_headers(request, user),
+    )
+    if response.status_code == 404:
+        return None
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+    return response.json()
+
+
 @router.get("/worker/tasks", response_model=list[dict])
 async def list_worker_tasks(
     request: Request,

@@ -81,3 +81,21 @@ async def import_trebovanje(
     if response.status_code not in (200, 201):
         raise HTTPException(status_code=response.status_code, detail=response.text)
     return response.json()
+
+
+@router.delete("/trebovanja/{trebovanje_id}", response_model=dict)
+async def delete_trebovanje(
+    trebovanje_id: UUID,
+    request: Request,
+    user: dict = Depends(get_current_user),
+    client: httpx.AsyncClient = Depends(get_task_client),
+) -> dict:
+    response = await client.delete(
+        f"/api/trebovanja/{trebovanje_id}",
+        headers=build_forward_headers(request, user),
+    )
+    if response.status_code == 404:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trebovanje not found")
+    if response.status_code not in (200, 204):
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+    return response.json() if response.content else {"message": "Trebovanje deleted successfully"}

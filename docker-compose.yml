@@ -115,6 +115,10 @@ services:
     build:
       context: .
       dockerfile: frontend/tv/Dockerfile
+      args:
+        - VITE_TV_DEVICE_ID=tv-dashboard-001
+        - VITE_TV_DEVICE_SECRET=service-local
+        - VITE_API_URL=http://localhost:8123
     env_file: .env
     depends_on:
       - api-gateway

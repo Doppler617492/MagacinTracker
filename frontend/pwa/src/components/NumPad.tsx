@@ -8,7 +8,8 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Button, Space } from 'antd';
 import { DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import { theme } from '../theme';
+import { whiteTheme } from '../theme-white';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface NumPadProps {
   visible: boolean;
@@ -41,6 +42,7 @@ const NumPad: React.FC<NumPadProps> = ({
   onCancel,
   onValueChange,
 }) => {
+  const t = useTranslation('sr');
   const [value, setValue] = useState<string>(defaultValue?.toString() ?? '0');
 
   const emitValueChange = (next: string) => {
@@ -109,19 +111,20 @@ const NumPad: React.FC<NumPadProps> = ({
     height: '70px',
     fontSize: '24px',
     fontWeight: 600,
-    background: theme.colors.cardBackground,
-    color: theme.colors.text,
-    border: `2px solid ${theme.colors.border}`,
-    borderRadius: theme.borderRadius.md,
+    background: whiteTheme.colors.cardBackground,
+    color: whiteTheme.colors.text,
+    border: `2px solid ${whiteTheme.colors.border}`,
+    borderRadius: whiteTheme.borderRadius.md,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     touchAction: 'manipulation',
+    boxShadow: whiteTheme.shadows.sm,
   };
 
   const actionButtonStyle: React.CSSProperties = {
     ...numberButtonStyle,
-    background: theme.colors.neutral,
-    color: theme.colors.text,
+    background: whiteTheme.colors.panelBackground,
+    color: whiteTheme.colors.text,
   };
 
   return (
@@ -134,19 +137,19 @@ const NumPad: React.FC<NumPadProps> = ({
       style={{ maxWidth: '95vw' }}
       styles={{
         body: {
-          background: theme.colors.background,
-          padding: theme.spacing.lg,
+          background: whiteTheme.colors.background,
+          padding: whiteTheme.spacing.lg,
         },
       }}
-      closeIcon={<CloseOutlined style={{ color: theme.colors.text }} />}
+      closeIcon={<CloseOutlined style={{ color: whiteTheme.colors.text }} />}
     >
       <div>
         <div
           style={{
-            color: theme.colors.text,
-            fontSize: theme.typography.sizes.lg,
-            fontWeight: theme.typography.weights.semibold,
-            marginBottom: theme.spacing.md,
+            color: whiteTheme.colors.text,
+            fontSize: whiteTheme.typography.sizes.lg,
+            fontWeight: whiteTheme.typography.weights.semibold,
+            marginBottom: whiteTheme.spacing.md,
             textAlign: 'center',
           }}
         >
@@ -155,23 +158,24 @@ const NumPad: React.FC<NumPadProps> = ({
 
         <div
           style={{
-            background: theme.colors.cardBackground,
-            border: `2px solid ${theme.colors.primary}`,
-            borderRadius: theme.borderRadius.md,
-            padding: theme.spacing.lg,
-            marginBottom: theme.spacing.lg,
+            background: whiteTheme.colors.cardBackground,
+            border: `3px solid ${whiteTheme.colors.primary}`,
+            borderRadius: whiteTheme.borderRadius.lg,
+            padding: whiteTheme.spacing.lg,
+            marginBottom: whiteTheme.spacing.lg,
             textAlign: 'right',
             minHeight: '80px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
+            boxShadow: whiteTheme.shadows.card,
           }}
         >
           <div
             style={{
               fontSize: '48px',
               fontWeight: 700,
-              color: theme.colors.text,
+              color: whiteTheme.colors.primary,
               fontFamily: 'monospace',
             }}
           >
@@ -182,9 +186,9 @@ const NumPad: React.FC<NumPadProps> = ({
         {maxValue !== undefined && (
           <div
             style={{
-              color: theme.colors.textSecondary,
-              fontSize: theme.typography.sizes.sm,
-              marginBottom: theme.spacing.md,
+              color: whiteTheme.colors.textSecondary,
+              fontSize: whiteTheme.typography.sizes.sm,
+              marginBottom: whiteTheme.spacing.md,
               textAlign: 'center',
             }}
           >
@@ -196,8 +200,8 @@ const NumPad: React.FC<NumPadProps> = ({
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: theme.spacing.sm,
-            marginBottom: theme.spacing.md,
+            gap: whiteTheme.spacing.sm,
+            marginBottom: whiteTheme.spacing.md,
           }}
         >
           {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map((num) => (
@@ -249,11 +253,11 @@ const NumPad: React.FC<NumPadProps> = ({
           style={{
             ...actionButtonStyle,
             width: '100%',
-            marginBottom: theme.spacing.md,
+            marginBottom: whiteTheme.spacing.md,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: theme.spacing.sm,
+            gap: whiteTheme.spacing.sm,
           }}
           onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
           onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
@@ -264,19 +268,19 @@ const NumPad: React.FC<NumPadProps> = ({
         </button>
 
         {extraContent && (
-          <div style={{ marginBottom: theme.spacing.md }}>{extraContent}</div>
+          <div style={{ marginBottom: whiteTheme.spacing.md }}>{extraContent}</div>
         )}
 
-        <Space size={theme.spacing.md} style={{ width: '100%' }}>
+        <Space size={whiteTheme.spacing.md} style={{ width: '100%' }}>
           <Button
             block
             size="large"
             onClick={onCancel}
             style={{
               height: '70px',
-              background: theme.colors.error,
-              color: '#ffffff',
-              border: 'none',
+              background: whiteTheme.colors.cardBackground,
+              color: whiteTheme.colors.text,
+              border: `2px solid ${whiteTheme.colors.border}`,
               fontWeight: 600,
             }}
             icon={<CloseOutlined />}
@@ -292,7 +296,7 @@ const NumPad: React.FC<NumPadProps> = ({
             loading={confirmLoading}
             style={{
               height: '70px',
-              background: theme.colors.success,
+              background: whiteTheme.colors.accent,
               border: 'none',
               fontWeight: 600,
             }}

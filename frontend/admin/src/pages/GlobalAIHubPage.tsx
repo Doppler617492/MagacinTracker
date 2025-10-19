@@ -444,7 +444,8 @@ const GlobalAIHubPage: React.FC = () => {
                       title: 'Samples',
                       dataIndex: 'training_samples',
                       key: 'training_samples',
-                      render: (samples: number) => samples.toLocaleString()
+                      render: (samples: number | undefined) =>
+                        typeof samples === 'number' ? samples.toLocaleString() : '0'
                     }
                   ]}
                 />
@@ -506,7 +507,8 @@ const GlobalAIHubPage: React.FC = () => {
                       title: 'Predictions',
                       dataIndex: 'total_inferences',
                       key: 'total_inferences',
-                      render: (count: number) => count.toLocaleString()
+                      render: (count: number | undefined) =>
+                        typeof count === 'number' ? count.toLocaleString() : '0'
                     }
                   ]}
                 />
@@ -549,7 +551,11 @@ const GlobalAIHubPage: React.FC = () => {
                   </div>
                   <div>
                     <Text strong>Parameters:</Text>
-                    <div>{dnnStatus?.total_parameters?.toLocaleString() || 0}</div>
+                    <div>{
+                      typeof dnnStatus?.total_parameters === 'number'
+                        ? dnnStatus.total_parameters.toLocaleString()
+                        : 0
+                    }</div>
                   </div>
                   <div>
                     <Text strong>Last Trained:</Text>

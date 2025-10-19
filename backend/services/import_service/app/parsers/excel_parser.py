@@ -52,11 +52,25 @@ def _detect_header_and_rows(sheet) -> Tuple[List[str], List[dict]]:
         # Consider non-empty if any cell has a value
         if not any(values):
             continue
-        record = {}
+        
+        # Skip rows that look like calculated values (no article code)
+        # These are typically rows with only numeric values in certain columns
+        has_article_code = False
         for i, header in enumerate(headers):
-            key = header if header else f"col_{i}"
-            record[key] = values[i] if i < len(values) else ""
-        data_rows.append(record)
+            if i < len(values):
+                header_norm = normalize_header(header)
+                if header_norm in {"sifra", "sifra_artikla", "\u0161ifra", "\u0161ifra_artikla"}:
+                    if values[i].strip():  # Has article code
+                        has_article_code = True
+                        break
+        
+        # Only include rows that have article codes (main item rows)
+        if has_article_code:
+            record = {}
+            for i, header in enumerate(headers):
+                key = header if header else f"col_{i}"
+                record[key] = values[i] if i < len(values) else ""
+            data_rows.append(record)
 
     return headers, data_rows
 

@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Spin, Input } from "antd";
-import client, { logout, getStoredUserProfile, StoredUserProfile } from "../api";
+import { Spin, Input, Tag } from "antd";
+import client, { logout, getStoredUserProfile, StoredUserProfile, getMyTeam, WorkerTeamInfo } from "../api";
 import HeaderStatusBar from "../components/HeaderStatusBar";
 import AIInsightsPanel from "../components/AIInsightsPanel";
 import TaskCard from "../components/TaskCard";
 import BottomNav from "../components/BottomNav";
 import { theme } from "../theme";
 import { offlineQueue, OfflineQueueState } from "../lib/offlineQueue";
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined, TeamOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import { useWebSocket } from "../hooks/useWebSocket";
 
 interface TaskData {
   id: string;
@@ -67,6 +68,9 @@ const TasksPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
 
+  // WebSocket for real-time updates
+  useWebSocket(["worker", "kpi", "dashboard"]);
+
   const {
     data: tasks,
     isLoading,
@@ -75,6 +79,13 @@ const TasksPage = () => {
     queryKey: ["worker", "tasks"],
     queryFn: fetchTasks,
     refetchInterval: isOnline ? 30000 : false, // Refetch every 30s when online
+  });
+
+  const { data: teamInfo } = useQuery<WorkerTeamInfo | null>({
+    queryKey: ["my-team"],
+    queryFn: getMyTeam,
+    refetchInterval: isOnline ? 60000 : false, // Refresh every minute when online
+    retry: false,
   });
 
   const { data: aiPredictions, error: aiError } = useQuery({
@@ -404,6 +415,47 @@ const TasksPage = () => {
         lastSyncedAt={lastSyncedAt}
         onLogout={handleLogout}
       />
+      
+      {/* Team & Shift Info */}
+      {teamInfo && (
+        <div style={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          padding: '12px 16px',
+          color: 'white',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div>
+              <TeamOutlined style={{ marginRight: '8px' }} />
+              <strong>{teamInfo.team_name}</strong>
+              <Tag color="cyan" style={{ marginLeft: '8px' }}>Smjena {teamInfo.shift}</Tag>
+            </div>
+            <div style={{ fontSize: '14px', opacity: 0.9 }}>
+              Partner: {teamInfo.partner_name}
+              {teamInfo.partner_online ? (
+                <Tag color="success" style={{ marginLeft: '8px' }}>Online</Tag>
+              ) : (
+                <Tag color="default" style={{ marginLeft: '8px' }}>Offline</Tag>
+              )}
+            </div>
+          </div>
+          {teamInfo.shift_status.countdown_formatted && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ClockCircleOutlined />
+              <span style={{ fontFamily: 'monospace', fontSize: '16px', fontWeight: 'bold' }}>
+                {teamInfo.shift_status.countdown_formatted}
+              </span>
+              <span style={{ fontSize: '12px', opacity: 0.9 }}>
+                {teamInfo.shift_status.status === 'on_break' ? 'do kraja pauze' : 
+                 teamInfo.shift_status.status === 'working' ? 'do pauze' : ''}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* AI Insights Panel */}
       <AIInsightsPanel

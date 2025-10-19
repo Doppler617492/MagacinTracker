@@ -54,6 +54,22 @@ def build_payload(headers: List[str], rows: List[dict], file_path: Path) -> dict
     magacin_name = first_row.get(mapping.get("magacin", ""), "").strip() or "Nepoznati magacin"
     radnja_name = first_row.get(mapping.get("radnja", ""), "").strip() or "Nepoznata radnja"
 
+    # If no document metadata found in data rows, try to extract from file name
+    if not dokument_broj and file_path.name:
+        # Extract document number from filename like "MP kalkulacija za knjigovodstvo_25-20AT-000336.xlsx"
+        import re
+        match = re.search(r'(\d+-\d+[A-Z]+-\d+)', file_path.name)
+        if match:
+            dokument_broj = match.group(1)
+    
+    # Set default values if not found
+    if not dokument_broj:
+        dokument_broj = f"IMPORT-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    if not magacin_name or magacin_name == "Nepoznati magacin":
+        magacin_name = "Veleprodajni Magacin"
+    if not radnja_name or radnja_name == "Nepoznata radnja":
+        radnja_name = "Tranzitno Skladiste"
+
     datum = _parse_date(datum_raw) if datum_raw else datetime.now()
 
     items: List[dict] = []

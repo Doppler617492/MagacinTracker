@@ -13,6 +13,7 @@ router = APIRouter()
 
 _ALLOWED_LIST_ROLES = {"admin", "menadzer", "sef", "komercijalista"}
 _ALLOWED_EDIT_ROLES = {"admin", "menadzer", "sef"}
+_ALLOWED_WORKER_ROLES = {"admin", "menadzer", "sef", "magacioner"}
 
 
 def _enforce_roles(user: dict, allowed: set[str]) -> None:
@@ -24,9 +25,14 @@ def _enforce_roles(user: dict, allowed: set[str]) -> None:
     # Convert allowed roles to lowercase for case-insensitive comparison
     allowed_lower = {r.lower() for r in allowed}
     
+    # Debug logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"User roles: {roles}, Required roles: {allowed_lower}, User data: {user}")
+    
     # Check if user has any of the allowed roles
     if roles.isdisjoint(allowed_lower):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Insufficient role. User has: {roles}, Required: {allowed_lower}")
 
 
 @router.get("/catalog/articles", response_model=dict)
@@ -118,6 +124,31 @@ async def catalog_sync_status(
         "/api/catalog/status",
         headers=build_forward_headers(request, user),
     )
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+    return response.json()
+
+
+@router.get("/catalog/lookup", response_model=dict)
+async def lookup_catalog_item(
+    request: Request,
+    user: dict = Depends(get_current_user),
+    client: httpx.AsyncClient = Depends(get_catalog_client),
+    search: str = Query(..., min_length=1, description="SKU or barcode to search for"),
+) -> dict:
+    """
+    Lookup a catalog item by SKU or barcode.
+    Available for workers (magacioner) and above.
+    """
+    _enforce_roles(user, _ALLOWED_WORKER_ROLES)
+    
+    response = await client.get(
+        "/api/catalog/lookup",
+        params={"search": search},
+        headers=build_forward_headers(request, user),
+    )
+    if response.status_code == 404:
+        raise HTTPException(status_code=404, detail="Item not found")
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=response.text)
     return response.json()

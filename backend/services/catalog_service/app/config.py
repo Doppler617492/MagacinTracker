@@ -10,11 +10,12 @@ class Settings(BaseSettings):
     service_name: str = "catalog-service"
     task_service_internal_url: str = "http://task-service:8000"
     task_service_timeout_seconds: float = 30.0
-    catalog_sync_source: Literal["FILE", "REST", "SFTP"] = "FILE"
+    catalog_sync_source: Literal["FILE", "REST", "SFTP"] = "REST"
     catalog_sync_path: Path | None = None
-    catalog_sync_rest_endpoint: str | None = None
+    catalog_sync_rest_endpoint: str | None = "http://task-service:8001/api/pantheon/catalog"
     catalog_sync_deactivate_missing: bool = True
     catalog_sync_cron: str | None = "0 2 * * *"
+    service_token: str = "internal-service-token"
 
 
 settings = Settings()

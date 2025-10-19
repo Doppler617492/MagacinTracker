@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useQuery } from "@tanstack/react-query";
-import client, { ensureAuth } from "./api";
+import client, { ensureAuth, getLiveDashboard, LiveDashboard } from "./api";
 import PrivacyToggle from "./components/PrivacyToggle";
 import MilestoneAnimation from "./components/MilestoneAnimation";
 
@@ -107,6 +107,13 @@ const App = () => {
     refetchInterval: 2 * 60 * 1000 // Refresh every 2 minutes
   });
 
+  const { data: liveDashboard } = useQuery<LiveDashboard>({ 
+    queryKey: ["tv", "live-dashboard"], 
+    queryFn: getLiveDashboard, 
+    enabled: ready,
+    refetchInterval: 15 * 1000 // Refresh every 15 seconds
+  });
+
   useEffect(() => {
     ensureAuth()
       .then(() => setReady(true))
@@ -198,11 +205,44 @@ const App = () => {
 
       <div className="tv-controls">
         <div className="brand-header">
-          <div className="brand-logo">📦</div>
+          <div className="brand-logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 7V5C3 3.89543 3.89543 3 5 3H19C20.1046 3 21 3.89543 21 5V7M3 7V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V7M3 7H21M8 11H16M8 15H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
           <div className="brand-text">
             <h1>Magacin Track</h1>
-            <p>Real-time Dashboard</p>
+            <p>Real-time Operations Dashboard</p>
           </div>
+          {liveDashboard?.shift_status.active_shift && (
+            <div style={{ 
+              marginLeft: 'auto', 
+              fontSize: '18px', 
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+            }}>
+              <span style={{ opacity: 0.8 }}>Aktivna Smjena:</span>
+              <span style={{ 
+                background: liveDashboard.shift_status.active_shift === 'A' ? '#2563eb' : '#059669',
+                padding: '4px 16px',
+                borderRadius: '8px',
+              }}>
+                Smjena {liveDashboard.shift_status.active_shift}
+              </span>
+              {(() => {
+                const shiftData = liveDashboard.shift_status.active_shift === 'A' 
+                  ? liveDashboard.shift_status.shift_a 
+                  : liveDashboard.shift_status.shift_b;
+                return shiftData?.countdown_formatted && (
+                  <span style={{ fontFamily: 'monospace', fontSize: '20px' }}>
+                    {shiftData.countdown_formatted}
+                  </span>
+                );
+              })()}
+            </div>
+          )}
         </div>
         <PrivacyToggle onPrivacyChange={setIsPrivate} />
       </div>
@@ -218,12 +258,11 @@ const App = () => {
           />
           {forecastData && (
             <div style={{ 
-              fontSize: '12px', 
-              color: '#666', 
-              marginTop: '4px',
-              opacity: 0.8
+              fontSize: '11px', 
+              color: 'var(--text-muted)', 
+              marginTop: '6px'
             }}>
-              🔮 Prognoza: {Math.round(forecastData.summary.forecast_avg)}/dan
+              Prognoza: {Math.round(forecastData.summary.forecast_avg)}/dan
             </div>
           )}
         </div>
@@ -285,15 +324,17 @@ const App = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
-                ⚙️ AI predlaže preraspodjelu zadataka
+              <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>
+                AI predlaže preraspodjelu zadataka
               </div>
-              <div style={{ fontSize: '14px', opacity: 0.9 }}>
+              <div style={{ fontSize: '13px', opacity: 0.9 }}>
                 {aiRecommendations.length} preporuka za optimizaciju opterećenja
               </div>
             </div>
-            <div style={{ fontSize: '24px' }}>
-              🤖
+            <div style={{ fontSize: '20px' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L13.09 8.26L19 7L14.74 12L19 17L13.09 15.74L12 22L10.91 15.74L5 17L9.26 12L5 7L10.91 8.26L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
           </div>
         </motion.div>
@@ -301,30 +342,70 @@ const App = () => {
 
       <main className="tv-content">
         <section className="leaderboard">
-          <h1>Top magacioneri</h1>
+          <h1>{(liveDashboard?.team_progress?.length ?? 0) > 0 ? 'Timovi' : 'Top magacioneri'}</h1>
           <div className="leaderboard-list">
-            {leaderboard.map((entry, index) => (
-              <motion.div
-                key={entry.user_id}
-                className="leaderboard-card"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <div className="leaderboard-rank">#{index + 1}</div>
-                <div className="leaderboard-name">{getDisplayName(entry.display_name)}</div>
-                <div className="leaderboard-progress">
-                  <div className="progress-bar">
-                    <div className="progress" style={{ width: `${Math.min(entry.task_completion, 100)}%` }} />
+            {liveDashboard?.team_progress && (liveDashboard.team_progress.length ?? 0) > 0 ? (
+              // Team-based display
+              liveDashboard.team_progress.map((team, index) => (
+                <motion.div
+                  key={team.team_id}
+                  className="leaderboard-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <div className="leaderboard-rank">
+                    <span style={{ 
+                      background: team.shift === 'A' ? '#2563eb' : '#059669',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                    }}>
+                      {team.shift}
+                    </span>
                   </div>
-                  <span>{Math.round(entry.task_completion)}%</span>
-                </div>
-                <div className="leaderboard-stats">
-                  <span>{entry.items_completed} stavki</span>
-                  <span>{entry.speed_per_hour.toFixed(1)}/h</span>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="leaderboard-name">
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{team.team}</div>
+                    <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                      {team.members.join(' & ')}
+                    </div>
+                  </div>
+                  <div className="leaderboard-progress">
+                    <div className="progress-bar">
+                      <div className="progress" style={{ width: `${Math.min(team.completion * 100, 100)}%` }} />
+                    </div>
+                    <span>{Math.round(team.completion * 100)}%</span>
+                  </div>
+                  <div className="leaderboard-stats">
+                    <span>{team.tasks_completed}/{team.tasks_total} zadataka</span>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              // Fallback to individual leaderboard
+              leaderboard.map((entry, index) => (
+                <motion.div
+                  key={entry.user_id}
+                  className="leaderboard-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <div className="leaderboard-rank">#{index + 1}</div>
+                  <div className="leaderboard-name">{getDisplayName(entry.display_name)}</div>
+                  <div className="leaderboard-progress">
+                    <div className="progress-bar">
+                      <div className="progress" style={{ width: `${Math.min(entry.task_completion, 100)}%` }} />
+                    </div>
+                    <span>{Math.round(entry.task_completion)}%</span>
+                  </div>
+                  <div className="leaderboard-stats">
+                    <span>{entry.items_completed} stavki</span>
+                    <span>{entry.speed_per_hour.toFixed(1)}/h</span>
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </section>
 

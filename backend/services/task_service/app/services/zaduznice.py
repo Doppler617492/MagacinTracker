@@ -14,6 +14,7 @@ from app_common.events import publish
 from ..models import (
     ManualOverride,
     ScanLog,
+    Team,
     Trebovanje,
     TrebovanjeStavka,
     UserAccount,
@@ -102,16 +103,32 @@ async def create_zaduznice(
 
     created_ids: list[UUID] = []
 
+    # Find team_id once for all assignments (if multiple assignments are for the same team)
+    team_id_cache: dict[UUID, UUID | None] = {}
+    
     for assignment in payload.assignments:
         if not assignment.items:
             raise ValueError("Dodjela mora imati stavke")
         await _validate_magacioner(session, assignment.magacioner_id)
+
+        # Find team for this worker
+        if assignment.magacioner_id not in team_id_cache:
+            team_stmt = select(Team.id).where(
+                ((Team.worker1_id == assignment.magacioner_id) | (Team.worker2_id == assignment.magacioner_id))
+                & (Team.active == True)
+            )
+            team_result = await session.execute(team_stmt)
+            team_id = team_result.scalar_one_or_none()
+            team_id_cache[assignment.magacioner_id] = team_id
+        else:
+            team_id = team_id_cache[assignment.magacioner_id]
 
         zaduznica_id = uuid.uuid4()
         zaduznica = Zaduznica(
             id=zaduznica_id,
             trebovanje_id=trebovanje.id,
             magacioner_id=assignment.magacioner_id,
+            team_id=team_id,  # Set team_id automatically
             prioritet=assignment.priority,
             rok=assignment.due_at,
             status=ZaduznicaStatus.assigned,
@@ -321,6 +338,17 @@ async def _refresh_parent_states(session: AsyncSession, zaduznica: Zaduznica) ->
         trebovanje.status = TrebovanjeStatus.new
 
     trebovanje.updated_at = datetime.now(timezone.utc)
+    
+    # Publish TV update when trebovanje status changes
+    await publish(
+        TV_CHANNEL,
+        {
+            "type": "trebovanje_status_update",
+            "trebovanje_id": str(trebovanje.id),
+            "status": trebovanje.status.value,
+            "progress": zaduznica.progress,
+        },
+    )
 
 
 async def register_scan(

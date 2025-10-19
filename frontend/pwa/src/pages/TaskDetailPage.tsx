@@ -193,6 +193,16 @@ const TaskDetailPage = () => {
     },
     onSuccess: () => {
       message.success('Dokument završen!');
+      
+      // Invalidate all relevant queries to trigger real-time updates
+      queryClient.invalidateQueries({ queryKey: ['worker', 'tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['worker', 'tasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['worker', 'my-team'] });
+      
+      // Also invalidate any KPI-related queries
+      queryClient.invalidateQueries({ queryKey: ['kpi'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      
       navigate('/');
     },
     onError: (error: any) => {
@@ -203,7 +213,9 @@ const TaskDetailPage = () => {
   // Handlers
   const handleQuantityClick = (item: TaskItem) => {
     setSelectedItem(item);
-    setQuantity(item.kolicina_trazena - item.picked_qty);
+    // Ensure quantity is never negative
+    const remainingQty = Math.max(0, item.kolicina_trazena - item.picked_qty);
+    setQuantity(remainingQty);
     setCloseItem(false);
     setReason(undefined);
     setNote('');
@@ -219,20 +231,59 @@ const TaskDetailPage = () => {
   };
 
   const handleQuantityConfirm = (confirmedQuantity: number) => {
-    if (!selectedItem) return;
+    console.log('🎯 handleQuantityConfirm CALLED with:', confirmedQuantity);
+    
+    if (!selectedItem) {
+      console.error('❌ No selectedItem!');
+      return;
+    }
 
     const required = selectedItem.kolicina_trazena;
+    console.log('📊 Required quantity:', required);
 
     if (confirmedQuantity > required) {
+      console.log('❌ Quantity too large!');
       message.error(`Količina ne može biti veća od tražene (${required})`);
       return;
     }
 
     const reasonRequired = confirmedQuantity < required || (closeItem && confirmedQuantity === 0);
-    if (reasonRequired && !reason) {
-      message.error('Razlog je obavezan kad je količina manja od tražene ili zatvarate stavku sa 0');
-      return;
+    
+    // STRICT validation: reason must be a non-empty string
+    const hasValidReason = Boolean(
+      reason && 
+      typeof reason === 'string' && 
+      reason.trim().length > 0
+    );
+    
+    // Debug logging
+    console.log('🔍 VALIDATION CHECK:', {
+      confirmedQuantity,
+      required,
+      closeItem,
+      reason,
+      reasonType: typeof reason,
+      reasonRequired,
+      hasValidReason,
+      willBlock: reasonRequired && !hasValidReason
+    });
+    
+    // STRICT CHECK: If reason is required, MUST have valid reason
+    if (reasonRequired) {
+      console.log('⚠️ Reason IS required!');
+      if (!hasValidReason) {
+        console.error('❌ BLOCKING SUBMIT - Reason is required!', { reason, hasValidReason });
+        message.error('Razlog je obavezan kad je količina manja od tražene ili zatvarate stavku sa 0. Molimo odaberite razlog iz padajuće liste.');
+        console.log('🛑 RETURN - API CALL BLOCKED!');
+        return; // BLOCK API CALL
+      } else {
+        console.log('✅ Has valid reason:', reason);
+      }
+    } else {
+      console.log('✅ Reason NOT required');
     }
+    
+    console.log('✅ VALIDATION PASSED - Sending API call');
 
     const operationId = `manual-${selectedItem.id}-${Date.now()}`;
 
@@ -357,9 +408,8 @@ const TaskDetailPage = () => {
 
   const dueDateLabel = data.due_at ? new Date(data.due_at).toLocaleString('sr-Latn-ME') : '—';
 
-  const allowDecimalForSelected = selectedItem
-    ? Math.abs(selectedItem.kolicina_trazena - Math.round(selectedItem.kolicina_trazena)) > 0.0001
-    : false;
+  // Always allow decimal input for manual entry - user might want to enter partial quantities
+  const allowDecimalForSelected = true;
 
   const reasonIsRequired = selectedItem
     ? quantity < selectedItem.kolicina_trazena || (closeItem && quantity === 0)

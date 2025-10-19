@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app_common.db import get_db
 from app_common.security import get_password_hash
 from .auth_test import get_current_user, require_role
+from .teams import get_any_user
 
 router = APIRouter()
 
@@ -43,9 +44,12 @@ async def list_users(
     role_filter: Optional[str] = Query(None),
     active_filter: Optional[bool] = Query(None),
     search: Optional[str] = Query(None),
-    current_user: dict = Depends(require_role("menadzer")),  # Using menadzer as admin
+    current_user: dict = Depends(get_any_user),
     db: AsyncSession = Depends(get_db)
 ):
+    # Check if user has permission (device tokens have role in user dict)
+    if current_user.get("role") not in ["ADMIN", "SEF", "MENADZER"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only ADMIN, SEF, and MENADZER can list users")
     """List all users with pagination and filters (ADMIN only)"""
     
     # Build query
@@ -258,8 +262,10 @@ async def update_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}"
             )
+        # Convert to uppercase for database enum (database expects ADMIN, MENADZER, etc.)
+        role_upper = role_lower.upper()
         update_fields.append("role = :role")
-        params["role"] = role_lower
+        params["role"] = role_upper
     
     if user_data.is_active is not None:
         update_fields.append("is_active = :is_active")

@@ -21,6 +21,15 @@ settings = get_settings()
 # Initial users to create
 USERS = [
     {
+        "id": "00000000-0000-0000-0000-000000000001",
+        "email": "import.service@magacin.com",
+        "password": "ServiceUser123!",
+        "first_name": "Import",
+        "last_name": "Service",
+        "role": "komercijalista",
+        "is_active": True
+    },
+    {
         "email": "admin@magacin.com",
         "password": "Admin123!",
         "first_name": "System",
@@ -91,13 +100,14 @@ async def seed_users():
                 # Hash password
                 password_hash = get_password_hash(user_data["password"])
                 
-                # Insert user
-                await conn.execute(
-                    text("""
-                        INSERT INTO users (email, password_hash, first_name, last_name, role, is_active)
-                        VALUES (:email, :password_hash, :first_name, :last_name, :role, :is_active)
-                    """),
-                    {
+                # Prepare insert statement and parameters based on whether ID is provided
+                if "id" in user_data:
+                    sql = """
+                        INSERT INTO users (id, email, password_hash, first_name, last_name, role, is_active, created_at, updated_at)
+                        VALUES (:id, :email, :password_hash, :first_name, :last_name, :role, :is_active, NOW(), NOW())
+                    """
+                    params = {
+                        "id": user_data["id"],
                         "email": user_data["email"].lower(),
                         "password_hash": password_hash,
                         "first_name": user_data["first_name"],
@@ -105,7 +115,22 @@ async def seed_users():
                         "role": user_data["role"],
                         "is_active": user_data["is_active"]
                     }
-                )
+                else:
+                    sql = """
+                        INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at, updated_at)
+                        VALUES (:email, :password_hash, :first_name, :last_name, :role, :is_active, NOW(), NOW())
+                    """
+                    params = {
+                        "email": user_data["email"].lower(),
+                        "password_hash": password_hash,
+                        "first_name": user_data["first_name"],
+                        "last_name": user_data["last_name"],
+                        "role": user_data["role"],
+                        "is_active": user_data["is_active"]
+                    }
+                
+                # Insert user
+                await conn.execute(text(sql), params)
                 
                 print(f"✅ Created user: {user_data['email']} ({user_data['role']})")
                 created_count += 1

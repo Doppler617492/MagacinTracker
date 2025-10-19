@@ -102,7 +102,7 @@ class CatalogService:
             deactivated=deactivated,
             duration_ms=duration_ms,
             status="success",
-            finished_at=datetime.now(timezone.utc),
+            finished_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
         self.session.add(status)
 
@@ -160,7 +160,7 @@ class CatalogService:
             .where(Artikal.sifra.in_(sifre_set))
         )
         rows = await self.session.execute(stmt)
-        return {row.sifra: row for row in rows.scalars()}
+        return {row.sifra: row for row in rows.scalars().unique()}
 
     async def _deactivate_missing(self, active_ids: set[uuid.UUID]) -> int:
         stmt = select(Artikal).where(Artikal.aktivan.is_(True))

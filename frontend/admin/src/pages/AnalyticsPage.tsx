@@ -20,7 +20,7 @@ import {
 import { DownloadOutlined, ReloadOutlined, RobotOutlined, EyeOutlined, WarningOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { getDailyStats, getTopWorkers, getManualCompletion, exportCSV, getKPIForecast, ForecastData } from '../api';
+import { getDailyStats, getTopWorkers, getManualCompletion, exportCSV, getKPIForecast, ForecastData, getUsers } from '../api';
 import AIAssistantModal from '../components/AIAssistantModal';
 
 const { RangePicker } = DatePicker;
@@ -40,6 +40,12 @@ const AnalyticsPage: React.FC = () => {
   });
   const [aiModalVisible, setAiModalVisible] = useState(false);
   const [showForecast, setShowForecast] = useState(false);
+
+  // Users Query for dropdown
+  const { data: usersData } = useQuery({
+    queryKey: ['users'],
+    queryFn: getUsers
+  });
 
   // KPI Data Queries
   const { data: dailyStats, isLoading: dailyLoading, refetch: refetchDaily } = useQuery({
@@ -141,7 +147,7 @@ const AnalyticsPage: React.FC = () => {
 
   // Prepare chart data with forecast
   const prepareChartData = () => {
-    const baseData = dailyStats?.data || [];
+    const baseData = dailyStats || [];
     
     if (!showForecast || !forecastData) {
       return baseData;
@@ -209,7 +215,7 @@ const AnalyticsPage: React.FC = () => {
   };
 
   const columnConfig = {
-    data: topWorkers?.data || [],
+    data: topWorkers || [],
     xField: 'worker_name',
     yField: 'completed_tasks',
     color: '#1890ff',
@@ -232,7 +238,7 @@ const AnalyticsPage: React.FC = () => {
   };
 
   const pieConfig = {
-    data: manualCompletion?.data || [],
+    data: manualCompletion || [],
     angleField: 'value',
     colorField: 'type',
     radius: 0.8,
@@ -317,9 +323,12 @@ const AnalyticsPage: React.FC = () => {
                 value={filters.radnik}
                 onChange={(value) => handleFilterChange('radnik', value)}
               >
-                <Option value="marko.sef@example.com">Marko Šef</Option>
-                <Option value="ana.radnik@example.com">Ana Radnik</Option>
-                <Option value="petar.worker@example.com">Petar Worker</Option>
+                <Option value="">Svi radnici</Option>
+                {usersData?.users?.filter(user => user.role === 'MAGACIONER').map(user => (
+                  <Option key={user.id} value={user.email}>
+                    {user.full_name}
+                  </Option>
+                ))}
               </Select>
             </Space>
           </Col>
@@ -471,7 +480,7 @@ const AnalyticsPage: React.FC = () => {
         <Col xs={24} lg={8}>
           <Card title="Top 5 radnika" loading={workersLoading}>
             <div style={{ height: '300px' }}>
-              {topWorkers?.data?.length > 0 ? (
+              {topWorkers?.length > 0 ? (
                 <Column {...columnConfig} />
               ) : (
                 <div style={{ 
@@ -493,7 +502,7 @@ const AnalyticsPage: React.FC = () => {
         <Col xs={24} lg={12}>
           <Card title="Ručne potvrde vs Skeniranje" loading={manualLoading}>
             <div style={{ height: '300px' }}>
-              {manualCompletion?.data?.length > 0 ? (
+              {manualCompletion?.length > 0 ? (
                 <Pie {...pieConfig} />
               ) : (
                 <div style={{ 

@@ -9,8 +9,69 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app_common.logging import get_logger
-from .auth_test import get_current_user
 from app_common.db import get_db
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from fastapi import HTTPException, status
+from app_common.config import get_settings
+
+settings = get_settings()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+
+async def get_any_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> dict:
+    """Get user from JWT token - accepts both device tokens and regular user tokens"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        user_id: str = payload.get("sub")
+        role: str = payload.get("role")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError as exc:  # noqa: BLE001
+        raise credentials_exception from exc
+    
+    # Check if this is a device token (non-UUID format)
+    try:
+        uuid.UUID(user_id)
+        is_device = False
+    except ValueError:
+        is_device = True
+    
+    # For device tokens, just validate the role
+    if is_device:
+        if role not in ["MENADZER", "ADMIN", "SEF"]:
+            raise credentials_exception
+        return {
+            "id": user_id,
+            "role": role,
+            "device_id": user_id,
+        }
+    
+    # For regular user tokens, look up in database
+    from sqlalchemy import text
+    result = await db.execute(
+        text("SELECT id, email, first_name, last_name, role, is_active FROM users WHERE id = :user_id"),
+        {"user_id": user_id}
+    )
+    user_row = result.fetchone()
+    
+    if user_row is None or not user_row.is_active:
+        raise credentials_exception
+    
+    return {
+        "id": str(user_row.id),
+        "email": user_row.email,
+        "first_name": user_row.first_name,
+        "last_name": user_row.last_name,
+        "role": user_row.role,
+    }
+
 from ..services.ai_recommendations import (
     generate_ai_recommendations,
     simulate_recommendation_scenario,
@@ -58,7 +119,7 @@ class LoadBalanceSimulationResponse(BaseModel):
 async def get_ai_recommendations(
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_any_user),
 ) -> List[RecommendationResponse]:
     """
     Generate AI recommendations for operational optimization.
@@ -123,7 +184,7 @@ async def simulate_load_balance_scenario(
     request: Request,
     simulation_request: LoadBalanceSimulationRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_any_user),
 ) -> LoadBalanceSimulationResponse:
     """
     Simulate what-if scenario for load balancing recommendations.
@@ -239,7 +300,7 @@ async def apply_recommendation(
     request: Request,
     recommendation_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_any_user),
 ) -> Dict[str, str]:
     """
     Apply an AI recommendation by executing the recommended actions.
@@ -290,7 +351,7 @@ async def dismiss_recommendation(
     request: Request,
     recommendation_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_any_user),
 ) -> Dict[str, str]:
     """
     Dismiss an AI recommendation.

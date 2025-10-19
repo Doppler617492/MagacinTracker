@@ -30,6 +30,11 @@ def get_import_client(request: Request) -> httpx.AsyncClient:
     return request.app.state.http_clients["import"]
 
 
+def get_http_client(request: Request, service: str = "task") -> httpx.AsyncClient:
+    """Get HTTP client for a specific service"""
+    return request.app.state.http_clients[service]
+
+
 def build_forward_headers(request: Request, user: dict) -> dict[str, str]:
     headers = {}
     

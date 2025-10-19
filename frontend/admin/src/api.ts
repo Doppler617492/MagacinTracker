@@ -689,10 +689,18 @@ export async function trainDNNModel(trainingRequest: DNNTrainingRequest): Promis
   return response.data;
 }
 
-export async function getDNNStatus(): Promise<Record<string, any>> {
+export async function getDNNStatus(): Promise<Record<string, any> | null> {
   await ensureAuth();
-  const response = await client.get("/ai/dnn/status");
-  return response.data;
+  try {
+    const response = await client.get("/ai/dnn/status");
+    return response.data;
+  } catch (e: any) {
+    // Gracefully handle missing endpoint in some environments
+    if (e?.response?.status === 404) {
+      return null;
+    }
+    throw e;
+  }
 }
 
 export async function predictDNN(predictionRequest: DNNPredictionRequest): Promise<DNNPredictionResponse> {
@@ -1139,6 +1147,122 @@ export async function getEdgeHubStatus(): Promise<Record<string, any>> {
   await ensureAuth();
   const response = await client.get("/edge/hub/status");
   return response.data;
+}
+
+// Team Management API
+export interface TeamMember {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  shift: string;
+  active: boolean;
+  worker1: TeamMember;
+  worker2: TeamMember;
+  created_at: string;
+}
+
+export interface TeamPerformance {
+  team_id: string;
+  team_name: string;
+  total_tasks: number;
+  completed_tasks: number;
+  in_progress_tasks: number;
+  completion_rate: number;
+  total_scans: number;
+  average_speed_per_hour: number;
+}
+
+export interface LiveDashboard {
+  total_tasks_today: number;
+  completed_tasks: number;
+  active_teams: number;
+  team_progress: Array<{
+    team: string;
+    team_id: string;
+    members: string[];
+    completion: number;
+    shift: string;
+    tasks_total: number;
+    tasks_completed: number;
+  }>;
+  shift_status: {
+    active_shift: string | null;
+    shift_a: any;
+    shift_b: any;
+    current_time: string;
+  };
+  generated_at: string;
+}
+
+export async function getTeams(): Promise<Team[]> {
+  await ensureAuth();
+  const response = await client.get("/teams");
+  return response.data;
+}
+
+export async function getTeam(teamId: string): Promise<Team> {
+  await ensureAuth();
+  const response = await client.get(`/teams/${teamId}`);
+  return response.data;
+}
+
+export async function getTeamPerformance(teamId: string): Promise<TeamPerformance> {
+  await ensureAuth();
+  const response = await client.get(`/teams/${teamId}/performance`);
+  return response.data;
+}
+
+export async function getLiveDashboard(scope: string = "day"): Promise<LiveDashboard> {
+  await ensureAuth();
+  const response = await client.get(`/dashboard/live?scope=${scope}`);
+  return response.data;
+}
+
+// Pantheon ERP Sync
+export async function syncPantheonTrebovanja(dateFrom?: string, dateTo?: string): Promise<{
+  status: string;
+  message: string;
+  total_fetched: number;
+  trebovanja_created: number;
+  trebovanja_updated: number;
+  stavke_created: number;
+  stavke_skipped: number;
+  errors: number;
+  duration_seconds: number;
+}> {
+  const params: any = {};
+  if (dateFrom) params.date_from = dateFrom;
+  if (dateTo) params.date_to = dateTo;
+  
+  const response = await client.post("/pantheon/sync/dispatches", null, { params });
+  return response.data;
+}
+
+// Get users (for dropdowns)
+export async function getUsers(params?: { page?: number; per_page?: number; role_filter?: string; active_filter?: boolean }): Promise<any> {
+  const response = await client.get("/admin/users", { params });
+  return response.data;
+}
+
+// Teams Management
+export async function createTeam(team: any): Promise<any> {
+  const response = await client.post("/teams", team);
+  return response.data;
+}
+
+export async function updateTeam(teamId: string, team: any): Promise<any> {
+  const response = await client.put(`/teams/${teamId}`, team);
+  return response.data;
+}
+
+export async function deleteTeam(teamId: string): Promise<void> {
+  await client.delete(`/teams/${teamId}`);
 }
 
 export default client;

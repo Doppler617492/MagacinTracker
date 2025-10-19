@@ -1,0 +1,24 @@
+# Global ignores to shrink build context and speed up builds
+.git
+.gitignore
+node_modules
+**/node_modules
+**/dist
+**/build
+**/.next
+**/.cache
+**/.turbo
+**/.vite
+**/.DS_Store
+**/*.log
+**/.env.local
+**/.venv
+**/__pycache__
+**/*.pyc
+imports
+tmp
+.tmp
+.pytest_cache
+coverage
+*.tgz
+Dockerfile*

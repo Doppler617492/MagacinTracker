@@ -133,6 +133,37 @@ class TrebovanjeRepository:
             stavke=items,
         )
 
+    async def delete(self, trebovanje_id: UUID, actor_id: UUID | None = None) -> None:
+        """Delete a trebovanje and all its related data"""
+        trebovanje = await self.session.get(Trebovanje, trebovanje_id)
+        if not trebovanje:
+            raise ValueError("Trebovanje not found")
+
+        # Allow deletion of all trebovanja regardless of status
+        # (Previously restricted in_progress and done, but user requested to allow deletion of finished documents)
+
+        # Record audit before deletion
+        await record_audit(
+            self.session,
+            action=AuditAction.trebovanje_deleted,
+            actor_id=actor_id,
+            entity_type="trebovanje",
+            entity_id=str(trebovanje.id),
+            payload={"dokument_broj": trebovanje.dokument_broj},
+        )
+
+        # Delete related import jobs first to avoid foreign key constraint violations
+        from ..models import ImportJob
+        import_jobs = await self.session.execute(
+            select(ImportJob).where(ImportJob.trebovanje_id == trebovanje_id)
+        )
+        for import_job in import_jobs.scalars():
+            await self.session.delete(import_job)
+
+        # Delete the trebovanje (cascade will handle other related records)
+        await self.session.delete(trebovanje)
+        await self.session.commit()
+
     async def _ensure_magacin(self, pantheon_id: str, naziv: str | None) -> UUID:
         magacin = await self.session.scalar(select(Magacin).where(Magacin.pantheon_id == pantheon_id))
         if magacin:
@@ -230,6 +261,8 @@ class TrebovanjeRepository:
             )
 
         self.session.add(trebovanje)
+        await self.session.flush()  # Ensure trebovanje gets an ID
+        
         file_hash = meta.get("file_hash")
         import_job = ImportJob(
             id=uuid.uuid4(),

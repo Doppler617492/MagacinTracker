@@ -10,10 +10,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app_common.events import publish
 from app_common.logging import get_logger
 
 from ..models import Trebovanje, TrebovanjeStavka, Zaduznica, ZaduznicaStavka
-from ..models.enums import AuditAction, DiscrepancyStatus, TrebovanjeStatus
+from ..models.enums import AuditAction, DiscrepancyStatus, TrebovanjeItemStatus, TrebovanjeStatus
 from ..schemas.shortage import (
     CompleteDocumentRequest,
     CompleteDocumentResponse,
@@ -30,6 +31,8 @@ from .audit import record_audit
 from .catalog import CatalogService
 
 logger = get_logger(__name__)
+
+TV_CHANNEL = "tv:delta"
 
 
 class ShortageService:
@@ -265,7 +268,7 @@ class ShortageService:
             .where(Trebovanje.id == trebovanje_id)
         )
         result = await self.session.execute(stmt)
-        trebovanje = result.scalar_one_or_none()
+        trebovanje = result.unique().scalar_one_or_none()
         
         if not trebovanje:
             raise ValueError(f"Trebovanje {trebovanje_id} not found")
@@ -289,10 +292,31 @@ class ShortageService:
                 f"Set confirm_incomplete=true to complete anyway."
             )
         
+        # Update individual stavka statuses
+        for stavka in trebovanje.stavke:
+            if float(stavka.picked_qty) >= float(stavka.kolicina_trazena):
+                stavka.status = TrebovanjeItemStatus.done
+            elif float(stavka.picked_qty) > 0:
+                stavka.status = TrebovanjeItemStatus.in_progress
+            elif stavka.discrepancy_status != DiscrepancyStatus.none:
+                # Item has shortage/discrepancy but was processed
+                stavka.status = TrebovanjeItemStatus.done
+            # If picked_qty = 0 and no discrepancy, keep as assigned
+        
         # Mark as completed
         trebovanje.status = TrebovanjeStatus.done
         trebovanje.closed_by = user_id
         trebovanje.closed_at = datetime.now(timezone.utc)
+        
+        # Update all related Zaduznica statuses to done
+        from ..models.zaduznica import Zaduznica, ZaduznicaStatus
+        zaduznica_stmt = select(Zaduznica).where(Zaduznica.trebovanje_id == trebovanje_id)
+        zaduznica_result = await self.session.execute(zaduznica_stmt)
+        zaduznice = zaduznica_result.scalars().all()
+        
+        for zaduznica in zaduznice:
+            zaduznica.status = ZaduznicaStatus.done
+            zaduznica.updated_at = datetime.now(timezone.utc)
         
         await self.session.commit()
         
@@ -310,6 +334,19 @@ class ShortageService:
                 "items_with_shortages": items_with_shortages,
                 "total_shortage_qty": total_shortage_qty,
                 "operation_id": request.operation_id,
+            },
+        )
+        
+        # Publish TV update for real-time sync
+        await publish(
+            TV_CHANNEL,
+            {
+                "type": "document_complete",
+                "trebovanje_id": str(trebovanje_id),
+                "status": "done",
+                "completed_items": completed_items,
+                "total_items": total_items,
+                "items_with_shortages": items_with_shortages,
             },
         )
         
@@ -352,7 +389,24 @@ class ShortageService:
         
         # Check if reason is mandatory
         reason_required = request.quantity < required or (request.close_item and request.quantity == 0)
-        if reason_required and not request.reason:
+        # Treat empty string, None, or whitespace-only as missing reason
+        has_valid_reason = request.reason and request.reason.strip()
+        
+        # Log for debugging
+        from app_common.logging import get_logger
+        logger = get_logger(__name__)
+        logger.info(
+            "manual_quantity_validation",
+            stavka_id=str(stavka_id),
+            quantity=request.quantity,
+            required=required,
+            close_item=request.close_item,
+            reason=request.reason,
+            reason_required=reason_required,
+            has_valid_reason=bool(has_valid_reason),
+        )
+        
+        if reason_required and not has_valid_reason:
             raise ValueError("Reason is mandatory when quantity < required or closing item with 0")
         
         # Update the stavka

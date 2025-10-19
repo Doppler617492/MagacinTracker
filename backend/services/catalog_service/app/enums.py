@@ -4,7 +4,17 @@ from enum import Enum
 
 
 class Role(str, Enum):
-    menadzer = "menadzer"
-    sef = "sef"
-    komercijalista = "komercijalista"
-    magacioner = "magacioner"
+    ADMIN = "ADMIN"
+    menadzer = "MENADZER"
+    sef = "SEF"
+    komercijalista = "KOMERCIJALISTA"
+    magacioner = "MAGACIONER"
+    
+    @classmethod
+    def _missing_(cls, value):
+        """Case-insensitive lookup"""
+        if isinstance(value, str):
+            for member in cls:
+                if member.value.lower() == value.lower():
+                    return member
+        return None

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from app_common.db import get_db
 
 from .auth_test import require_role
+from .teams import get_any_user
 from ..models.enums import Role
 from ..schemas import (
     ManualCompleteRequest,
@@ -32,11 +33,17 @@ view_roles_dependency = require_role("sef")  # Simplified for now
 @router.post("/zaduznice", response_model=ZaduznicaCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_zaduznice(
     payload: ZaduznicaCreateRequest,
-    user: dict = Depends(require_role("sef")),
+    user: dict = Depends(get_any_user),
     db=Depends(get_db),
 ) -> ZaduznicaCreateResponse:
+    # Check if user has permission (device tokens have role in user dict)
+    if user.get("role") not in ["ADMIN", "SEF", "MENADZER"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only ADMIN, SEF, and MENADZER can create zaduznice")
+    
     try:
-        created = await service.create_zaduznice(db, payload, actor_id=UUID(user["id"]))
+        # For device tokens, use None as actor_id, for user tokens use user.id
+        actor_id = None if user.get("device_id") else UUID(user["id"])
+        created = await service.create_zaduznice(db, payload, actor_id=actor_id)
     except ValueError as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return ZaduznicaCreateResponse(zaduznica_ids=created)
@@ -70,9 +77,14 @@ async def reassign(
 
 @router.get("/moji-zadaci", response_model=list[WorkerTask])
 async def my_tasks(
-    user: dict = Depends(require_role("magacioner")),
+    user: dict = Depends(get_any_user),
     db=Depends(get_db),
 ) -> list[WorkerTask]:
+    # For device tokens, we need to get the actual worker ID from the token
+    if user.get("device_id"):
+        # Device tokens can't access worker tasks directly
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Device tokens cannot access worker tasks")
+    
     return await service.list_worker_tasks(db, UUID(user["id"]))
 
 

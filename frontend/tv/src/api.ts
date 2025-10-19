@@ -39,4 +39,33 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
+// Team & Dashboard interfaces
+export interface LiveDashboard {
+  total_tasks_today: number;
+  completed_tasks: number;
+  active_teams: number;
+  team_progress: Array<{
+    team: string;
+    team_id: string;
+    members: string[];
+    completion: number;
+    shift: string;
+    tasks_total: number;
+    tasks_completed: number;
+  }>;
+  shift_status: {
+    active_shift: string | null;
+    shift_a: any;
+    shift_b: any;
+    current_time: string;
+  };
+  generated_at: string;
+}
+
+export async function getLiveDashboard(): Promise<LiveDashboard> {
+  await ensureAuth();
+  const { data } = await client.get("/dashboard/live");
+  return data;
+}
+
 export default client;

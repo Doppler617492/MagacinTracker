@@ -191,4 +191,37 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
+// Team Management
+export interface WorkerTeamInfo {
+  team_id: string;
+  team_name: string;
+  shift: string;
+  partner_id: string;
+  partner_name: string;
+  partner_online: boolean;
+  shift_status: {
+    shift: string;
+    status: string;
+    next_event: string | null;
+    countdown_seconds: number | null;
+    countdown_formatted: string | null;
+    shift_start: string;
+    shift_end: string;
+    break_start: string;
+    break_end: string;
+  };
+}
+
+export async function getMyTeam(): Promise<WorkerTeamInfo | null> {
+  try {
+    const response = await client.get("/worker/my-team");
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 export default client;

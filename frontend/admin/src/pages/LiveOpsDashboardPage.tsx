@@ -750,9 +750,11 @@ const LiveOpsDashboardPage: React.FC = () => {
                   dataSource={Object.entries(warehouseLoad?.warehouse_load || {}).map(([warehouseId, load]: [string, any]) => ({
                     key: warehouseId,
                     warehouse: warehouseId,
-                    event_count: load.event_count,
-                    active_workers: load.active_workers.length,
-                    last_event: load.last_event
+                    total_tasks: load.total_tasks || 0,
+                    pending: load.pending || 0,
+                    in_progress: load.in_progress || 0,
+                    completed: load.completed || 0,
+                    load_percentage: load.load_percentage || 0
                   }))}
                   pagination={false}
                   columns={[
@@ -760,35 +762,42 @@ const LiveOpsDashboardPage: React.FC = () => {
                       title: 'Warehouse',
                       dataIndex: 'warehouse',
                       key: 'warehouse',
+                      render: (name: string) => <Text strong>{name}</Text>
                     },
                     {
-                      title: 'Event Count',
-                      dataIndex: 'event_count',
-                      key: 'event_count',
-                      render: (count: number) => (
+                      title: 'Total Tasks',
+                      dataIndex: 'total_tasks',
+                      key: 'total_tasks',
+                      render: (count: number) => <Tag color="blue">{count}</Tag>
+                    },
+                    {
+                      title: 'Pending',
+                      dataIndex: 'pending',
+                      key: 'pending',
+                      render: (count: number) => <Tag color="orange">{count}</Tag>
+                    },
+                    {
+                      title: 'In Progress',
+                      dataIndex: 'in_progress',
+                      key: 'in_progress',
+                      render: (count: number) => <Tag color="processing">{count}</Tag>
+                    },
+                    {
+                      title: 'Completed',
+                      dataIndex: 'completed',
+                      key: 'completed',
+                      render: (count: number) => <Tag color="success">{count}</Tag>
+                    },
+                    {
+                      title: 'Load',
+                      dataIndex: 'load_percentage',
+                      key: 'load_percentage',
+                      render: (percent: number) => (
                         <Progress 
-                          percent={Math.min(100, count / 10)} 
+                          percent={percent} 
                           size="small"
-                          status={count > 100 ? "exception" : "active"}
+                          status={percent > 80 ? "exception" : percent > 50 ? "normal" : "success"}
                         />
-                      )
-                    },
-                    {
-                      title: 'Active Workers',
-                      dataIndex: 'active_workers',
-                      key: 'active_workers',
-                      render: (count: number) => (
-                        <Tag color="green">{count}</Tag>
-                      )
-                    },
-                    {
-                      title: 'Last Event',
-                      dataIndex: 'last_event',
-                      key: 'last_event',
-                      render: (time: string) => (
-                        <Text type="secondary">
-                          {new Date(time).toLocaleTimeString()}
-                        </Text>
                       )
                     }
                   ]}

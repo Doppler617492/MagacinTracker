@@ -1,0 +1,62 @@
+{
+  "name": "Cungu WMS Radnik",
+  "short_name": "Cungu WMS",
+  "version": "2.0.1",
+  "description": "Enterprise WMS za Zebra MC3300 i Android uređaje - Skeniranje barkodova, zadaci, inventar",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0066CC",
+  "background_color": "#F5F7FA",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "scope": "/",
+  "lang": "sr-Latn-ME",
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "Moji zadaci",
+      "short_name": "Zadaci",
+      "description": "Pregled i obrada zadataka sa skeniranjem barkodova",
+      "url": "/tasks",
+      "icons": []
+    },
+    {
+      "name": "Popis",
+      "short_name": "Popis",
+      "description": "Izvršavanje inventara",
+      "url": "/stock-count",
+      "icons": []
+    },
+    {
+      "name": "Pretraga",
+      "short_name": "Pretraga",
+      "description": "Pretraga šifre ili barkoda",
+      "url": "/lookup",
+      "icons": []
+    }
+  ],
+  "capture_links": "none",
+  "edge_side_panel": {},
+  "iarc_rating_id": ""
+}
+

@@ -19,7 +19,19 @@ const LoginPage: React.FC = () => {
       await login(values.email, values.password);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Greška pri prijavljivanju');
+      // Normalize common FastAPI error payloads (401/422)
+      const resp = err?.response;
+      let message: string = 'Greška pri prijavljivanju';
+      if (resp?.data) {
+        if (typeof resp.data?.detail === 'string') {
+          message = resp.data.detail;
+        } else if (Array.isArray(resp.data?.detail) && resp.data.detail.length > 0) {
+          // Pydantic v2 validation errors
+          const first = resp.data.detail[0];
+          message = first?.msg || message;
+        }
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -79,4 +91,3 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
-

@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.audit import AuditLog
@@ -43,7 +43,7 @@ class KPIService:
         # Total trebovanja and stavke
         trebovanja_query = select(
             func.count(Trebovanje.id).label('total_trebovanja'),
-            func.sum(func.coalesce(TrebovanjeStavka.kolicina, 0)).label('total_stavke')
+            func.sum(func.coalesce(TrebovanjeStavka.kolicina_trazena, 0)).label('total_stavke')
         ).select_from(
             Trebovanje.__table__.join(
                 TrebovanjeStavka.__table__,
@@ -62,8 +62,8 @@ class KPIService:
         zaduznica_query = select(
             func.count(Zaduznica.id).label('total_zadaci'),
             func.sum(
-                func.case(
-                    (Zaduznica.status == 'completed', 1),
+                case(
+                    (Zaduznica.status == 'done', 1),
                     else_=0
                 )
             ).label('completed_zadaci')
@@ -76,7 +76,7 @@ class KPIService:
         manual_query = select(
             func.count(ScanLog.id).label('total_scans'),
             func.sum(
-                func.case(
+                case(
                     (ScanLog.result == ScanResult.manual, 1),
                     else_=0
                 )
@@ -160,7 +160,7 @@ class KPIService:
             
             # Daily stavke count
             stavke_query = select(
-                func.sum(func.coalesce(TrebovanjeStavka.kolicina, 0)).label('stavke_count')
+                func.sum(func.coalesce(TrebovanjeStavka.kolicina_trazena, 0)).label('stavke_count')
             ).select_from(
                 Trebovanje.__table__.join(
                     TrebovanjeStavka.__table__,
@@ -202,12 +202,12 @@ class KPIService:
         
         query = select(
             UserAccount.id,
-            UserAccount.ime,
-            UserAccount.prezime,
+            UserAccount.first_name,
+            UserAccount.last_name,
             func.count(Zaduznica.id).label('total_zadaci'),
             func.sum(
-                func.case(
-                    (Zaduznica.status == 'completed', 1),
+                case(
+                    (Zaduznica.status == 'done', 1),
                     else_=0
                 )
             ).label('completed_zadaci')
@@ -222,7 +222,7 @@ class KPIService:
         ).where(
             and_(*conditions)
         ).group_by(
-            UserAccount.id, UserAccount.ime, UserAccount.prezime
+            UserAccount.id, UserAccount.first_name, UserAccount.last_name
         ).order_by(
             func.count(Zaduznica.id).desc()
         ).limit(limit)
@@ -237,8 +237,8 @@ class KPIService:
             
             workers.append({
                 "radnik_id": str(row.id),
-                "ime": row.ime,
-                "prezime": row.prezime,
+                "ime": row.first_name,
+                "prezime": row.last_name,
                 "total_zadaci": total,
                 "completed_zadaci": completed,
                 "completion_rate": round(completion_rate, 2)
@@ -270,8 +270,8 @@ class KPIService:
             query = select(
                 func.count(ScanLog.id).label('total_scans'),
                 func.sum(
-                    func.case(
-                        (ScanLog.result == ScanResult.manual, 1),
+                    case(
+                        (ScanLog.barcode == "manual", 1),
                         else_=0
                     )
                 ).label('manual_scans')
@@ -293,8 +293,8 @@ class KPIService:
             query = select(
                 func.count(ScanLog.id).label('total_scans'),
                 func.sum(
-                    func.case(
-                        (ScanLog.result == ScanResult.manual, 1),
+                    case(
+                        (ScanLog.barcode == "manual", 1),
                         else_=0
                     )
                 ).label('manual_scans')

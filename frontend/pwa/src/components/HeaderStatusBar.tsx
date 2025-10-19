@@ -23,6 +23,8 @@ interface HeaderStatusBarProps {
   pendingSyncCount?: number;
   lastSyncedAt?: number | null;
   activeShiftLabel?: string;
+  battery?: number | null;
+  isCharging?: boolean;
   onLogout?: () => void;
 }
 
@@ -36,21 +38,31 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
   pendingSyncCount = 0,
   lastSyncedAt = null,
   activeShiftLabel = 'Dnevna smjena',
+  battery = null,
+  isCharging = false,
   onLogout,
 }) => {
-  const [batteryLevel, setBatteryLevel] = useState<number>(100);
+  const [batteryLevel, setBatteryLevel] = useState<number>(battery ?? 100);
+  const [charging, setCharging] = useState<boolean>(isCharging);
 
   useEffect(() => {
-    // Battery API (if available on device)
-    if ('getBattery' in navigator) {
-      (navigator as any).getBattery().then((battery: any) => {
-        setBatteryLevel(Math.round(battery.level * 100));
-        battery.addEventListener('levelchange', () => {
-          setBatteryLevel(Math.round(battery.level * 100));
+    // Use prop value if provided, otherwise try Battery API
+    if (battery !== null) {
+      setBatteryLevel(battery);
+      setCharging(isCharging);
+    } else if ('getBattery' in navigator) {
+      (navigator as any).getBattery().then((batteryObj: any) => {
+        setBatteryLevel(Math.round(batteryObj.level * 100));
+        setCharging(batteryObj.charging);
+        batteryObj.addEventListener('levelchange', () => {
+          setBatteryLevel(Math.round(batteryObj.level * 100));
+        });
+        batteryObj.addEventListener('chargingchange', () => {
+          setCharging(batteryObj.charging);
         });
       });
     }
-  }, []);
+  }, [battery, isCharging]);
 
   const formattedLastSync = lastSyncedAt
     ? new Date(lastSyncedAt).toLocaleString('sr-Latn-ME', {
@@ -284,23 +296,29 @@ const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
         </div>
 
         {/* Battery */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <ThunderboltOutlined
-            style={{
-              fontSize: '16px',
-              color: batteryLevel > 20 ? theme.colors.success : theme.colors.error,
-            }}
-          />
-          <span
-            style={{
-              color: theme.colors.textSecondary,
-              fontSize: theme.typography.sizes.xs,
-              fontWeight: theme.typography.weights.medium,
-            }}
-          >
-            {batteryLevel}%
-          </span>
-        </div>
+        {batteryLevel !== null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <ThunderboltOutlined
+              style={{
+                fontSize: '16px',
+                color: charging
+                  ? theme.colors.primary
+                  : batteryLevel > 20
+                    ? theme.colors.success
+                    : theme.colors.error,
+              }}
+            />
+            <span
+              style={{
+                color: theme.colors.textSecondary,
+                fontSize: theme.typography.sizes.xs,
+                fontWeight: theme.typography.weights.medium,
+              }}
+            >
+              {batteryLevel}%{charging && ' ⚡'}
+            </span>
+          </div>
+        )}
       </div>
     </header>
   );

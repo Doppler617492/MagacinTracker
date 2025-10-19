@@ -50,7 +50,8 @@ class ImportProcessor:
         logger.info("import.process.start", file=str(path))
         try:
             payload = await asyncio.get_running_loop().run_in_executor(None, self._parse_file, path)
-            await self._enrich_payload(payload)
+            # Skip enrichment for now - articles will be created during import
+            # await self._enrich_payload(payload)
 
             async with httpx.AsyncClient(timeout=settings.task_service_timeout_seconds) as client:
                 response = await client.post(

@@ -4,7 +4,9 @@ type OfflineActionType =
   | 'pick-by-code'
   | 'short-pick'
   | 'not-found'
-  | 'complete-document';
+  | 'complete-document'
+  | 'stock-count'
+  | 'exception';
 
 interface OfflineAction {
   id: string;

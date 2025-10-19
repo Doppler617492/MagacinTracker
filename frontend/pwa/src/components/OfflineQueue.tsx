@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Badge, Button, Card, List, message, Space, Tag, Typography } from 'antd';
 import { WifiOutlined, DisconnectOutlined, SyncOutlined, DeleteOutlined } from '@ant-design/icons';
 import { offlineQueue, networkManager } from '../lib/offlineQueue';
+import { whiteTheme } from '../theme-white';
+import { useTranslation } from '../hooks/useTranslation';
 import client from '../api';
 
 const { Text } = Typography;
@@ -16,6 +18,7 @@ interface OfflineAction {
 }
 
 const OfflineQueueComponent = () => {
+  const t = useTranslation('sr');
   const [isOnline, setIsOnline] = useState(networkManager.isConnected());
   const [queue, setQueue] = useState<OfflineAction[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -67,6 +70,10 @@ const OfflineQueueComponent = () => {
           await client.post(`/worker/tasks/${action.taskItemId}/not-found`, action.payload);
         } else if (action.type === 'complete-document') {
           await client.post(`/worker/documents/${action.taskItemId}/complete`, action.payload);
+        } else if (action.type === 'stock-count') {
+          await client.post(`/counts`, action.payload);
+        } else if (action.type === 'exception') {
+          await client.post(`/exceptions`, action.payload);
         }
         
         offlineQueue.removeAction(action.id);
@@ -106,7 +113,9 @@ const OfflineQueueComponent = () => {
         right: 16, 
         zIndex: 1000,
         maxWidth: 400,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+        background: whiteTheme.colors.cardBackground,
+        border: `1px solid ${whiteTheme.colors.border}`,
+        boxShadow: whiteTheme.shadows.xl,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -174,6 +183,8 @@ const OfflineQueueComponent = () => {
                       {action.type === 'short-pick' && 'Djelimično zatvaranje'}
                       {action.type === 'not-found' && 'Nije pronađeno'}
                       {action.type === 'complete-document' && 'Završetak dokumenta'}
+                      {action.type === 'stock-count' && 'Popis zaliha'}
+                      {action.type === 'exception' && 'Izuzetak'}
                     </Text>
                     {action.retries > 0 && (
                       <Tag color="orange" style={{ fontSize: '10px' }}>

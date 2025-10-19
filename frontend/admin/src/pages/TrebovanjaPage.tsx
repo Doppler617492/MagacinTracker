@@ -6,6 +6,8 @@ import {
   Drawer,
   Form,
   message,
+  Modal,
+  Popconfirm,
   Select,
   Space,
   Table,
@@ -15,7 +17,8 @@ import type { ColumnsType } from "antd/es/table";
 import type { TableRowSelection } from "antd/es/table/interface";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import client from "../api";
+import client, { syncPantheonTrebovanja } from "../api";
+import { useWebSocket } from "../hooks/useWebSocket";
 
 type TrebovanjeListItem = {
   id: string;
@@ -112,10 +115,13 @@ const TrebovanjaPage = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [form] = Form.useForm<AssignFormValues>();
 
+  // Use WebSocket for real-time updates
+  useWebSocket(["trebovanja", "trebovanje"]);
+
   const { data, isLoading } = useQuery<TrebovanjeListResponse>({
     queryKey: ["trebovanja"],
     queryFn: fetchTrebovanja,
-    refetchInterval: 15000, // Refetch every 15 seconds to see worker updates
+    // Remove polling interval - WebSocket will trigger updates
   });
 
   // Fetch magacioneri dynamically
@@ -165,6 +171,35 @@ const TrebovanjaPage = () => {
     }
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (trebovanjeId: string) => {
+      await client.delete(`/trebovanja/${trebovanjeId}`);
+    },
+    onSuccess: () => {
+      message.success("Trebovanje obrisano");
+      queryClient.invalidateQueries({ queryKey: ["trebovanja"] });
+    },
+    onError: (error: any) => {
+      message.error(error?.response?.data?.detail ?? "Greška prilikom brisanja");
+    }
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: () => syncPantheonTrebovanja(),
+    onSuccess: (data) => {
+      if (data.trebovanja_created > 0) {
+        message.success(`✅ Uvezeno ${data.trebovanja_created} novih trebovanja iz Pantheon-a (${data.stavke_created} stavki)`);
+      } else {
+        message.info("ℹ️ Nema novih trebovanja u Pantheon-u");
+      }
+      queryClient.invalidateQueries({ queryKey: ["trebovanja"] });
+    },
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.detail || error.message || "Nepoznata greška";
+      message.error(`❌ Pantheon sync greška: ${errorMsg}`);
+    }
+  });
+
   const columns: ColumnsType<TrebovanjeListItem> = [
     {
       title: "Dokument",
@@ -190,17 +225,35 @@ const TrebovanjaPage = () => {
     {
       title: "Akcije",
       dataIndex: "id",
-      render: (value: string) => (
-        <Button
-          type="link"
-          onClick={() => {
-            setSelectedTrebovanjeId(value);
-            setDrawerOpen(true);
-            setSelectedRowKeys([]);
-          }}
-        >
-          Otvori
-        </Button>
+      render: (value: string, record: TrebovanjeListItem) => (
+        <Space>
+          <Button
+            type="link"
+            onClick={() => {
+              setSelectedTrebovanjeId(value);
+              setDrawerOpen(true);
+              setSelectedRowKeys([]);
+            }}
+          >
+            Otvori
+          </Button>
+          <Popconfirm
+            title="Brisanje trebovanja"
+            description={`Da li ste sigurni da želite da obrišete trebovanje "${record.dokument_broj}"?`}
+            onConfirm={() => deleteMutation.mutate(value)}
+            okText="Obriši"
+            cancelText="Otkaži"
+            okType="danger"
+          >
+            <Button
+              type="link"
+              danger
+              loading={deleteMutation.isPending}
+            >
+              Obriši
+            </Button>
+          </Popconfirm>
+        </Space>
       )
     }
   ];
@@ -278,7 +331,24 @@ const TrebovanjaPage = () => {
   };
 
   return (
-    <Card title="Trebovanja" extra={<Button onClick={() => queryClient.invalidateQueries({ queryKey: ["trebovanja"] })}>Osvježi</Button>}>
+    <Card 
+      title="Trebovanja" 
+      extra={
+        <Space>
+          <Button 
+            type="primary" 
+            loading={syncMutation.isPending}
+            onClick={() => syncMutation.mutate()}
+            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+          >
+            Uvezi iz Pantheon-a
+          </Button>
+          <Button onClick={() => queryClient.invalidateQueries({ queryKey: ["trebovanja"] })}>
+            Osvježi
+          </Button>
+        </Space>
+      }
+    >
       <Table
         rowKey="id"
         columns={columns}

@@ -17,6 +17,9 @@ class Zaduznica(Base):
         UUID(as_uuid=True), ForeignKey("trebovanje.id", ondelete="CASCADE"), index=True
     )
     magacioner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    team_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("team.id"), nullable=True, index=True
+    )
     prioritet: Mapped[TaskPriority] = mapped_column(
         Enum(TaskPriority, name="task_priority"), default=TaskPriority.normal
     )
@@ -37,6 +40,7 @@ class Zaduznica(Base):
     )
 
     trebovanje: Mapped["Trebovanje"] = relationship("Trebovanje")
+    team: Mapped["Team"] = relationship("Team", foreign_keys=[team_id])
 
 
 class ZaduznicaStavka(Base):
