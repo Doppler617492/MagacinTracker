@@ -26,6 +26,13 @@ class FeatureFlag(str, Enum):
     FF_IOT_CAMERA = "FF_IOT_CAMERA"                # Camera verification & photos
     FF_IOT_TELEMETRY = "FF_IOT_TELEMETRY"          # Sensor telemetry & alerts
     FF_VISION_COUNT = "FF_VISION_COUNT"            # Vision-based cycle counting
+    
+    # Phase 6 - RFID Locations & Live Map
+    FF_LOCATIONS = "FF_LOCATIONS"                  # Location management
+    FF_RFID_ZONES = "FF_RFID_ZONES"                # RFID zone tracking
+    FF_LIVE_MAP = "FF_LIVE_MAP"                    # Live map with WebSocket
+    FF_PICK_TO_LIGHT = "FF_PICK_TO_LIGHT"          # Pick-to-light (reserved)
+    FF_PALLET_TRACKING = "FF_PALLET_TRACKING"      # Handling unit tracking
 
 
 class FeatureFlagService:
@@ -62,6 +69,13 @@ class FeatureFlagService:
         FeatureFlag.FF_IOT_CAMERA: False,
         FeatureFlag.FF_IOT_TELEMETRY: False,
         FeatureFlag.FF_VISION_COUNT: False,
+        
+        # Phase 6 - RFID Locations: Disabled by default for safe rollout
+        FeatureFlag.FF_LOCATIONS: False,
+        FeatureFlag.FF_RFID_ZONES: False,
+        FeatureFlag.FF_LIVE_MAP: False,
+        FeatureFlag.FF_PICK_TO_LIGHT: False,  # Reserved for future
+        FeatureFlag.FF_PALLET_TRACKING: False,
     }
     
     @classmethod
@@ -192,4 +206,30 @@ def is_iot_telemetry_enabled() -> bool:
 def is_vision_count_enabled() -> bool:
     """Check if Vision Count is enabled"""
     return FeatureFlagService.is_enabled(FeatureFlag.FF_VISION_COUNT)
+
+
+# Phase 6 - RFID Locations & Live Map
+def is_locations_enabled() -> bool:
+    """Check if Location Management is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_LOCATIONS)
+
+
+def is_rfid_zones_enabled() -> bool:
+    """Check if RFID Zone Tracking is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_RFID_ZONES)
+
+
+def is_live_map_enabled() -> bool:
+    """Check if Live Map is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_LIVE_MAP)
+
+
+def is_pick_to_light_enabled() -> bool:
+    """Check if Pick-to-Light is enabled (reserved)"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_PICK_TO_LIGHT)
+
+
+def is_pallet_tracking_enabled() -> bool:
+    """Check if Pallet Tracking is enabled"""
+    return FeatureFlagService.is_enabled(FeatureFlag.FF_PALLET_TRACKING)
 
