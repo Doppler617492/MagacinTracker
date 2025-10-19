@@ -194,3 +194,29 @@ class ReceivingItemStatus(str, Enum):
     NOVO = "novo"          # New
     U_TOKU = "u_toku"      # In progress
     GOTOVO = "gotovo"      # Done
+
+
+# ============================================================================
+# LOCATION-BASED WMS - PHASE 3
+# ============================================================================
+
+class LocationType(str, Enum):
+    """
+    Location types in warehouse hierarchy
+    Serbian: Tip lokacije (Zona → Regal → Polica → Bin)
+    """
+    ZONE = "zone"       # Zona (top-level area)
+    REGAL = "regal"     # Regal (rack/aisle)
+    POLICA = "polica"   # Polica (shelf)
+    BIN = "bin"         # Bin (smallest storage unit)
+
+
+class CycleCountStatus(str, Enum):
+    """
+    Cycle count status
+    Serbian: Status popisa
+    """
+    SCHEDULED = "scheduled"      # Zakazano
+    IN_PROGRESS = "in_progress"  # U toku
+    COMPLETED = "completed"      # Završeno
+    CANCELLED = "cancelled"      # Otkazano
