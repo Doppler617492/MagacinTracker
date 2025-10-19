@@ -157,3 +157,40 @@ class SyncAction(str, Enum):
     RECEIPT_SYNC = "RECEIPT_SYNC"
     CATALOG_LOOKUP_API = "CATALOG_LOOKUP_API"
     WMS_FLAG_SET = "WMS_FLAG_SET"
+
+
+# ============================================================================
+# RECEIVING (PRIJEM ROBE) - PHASE 2
+# ============================================================================
+
+class ReceivingStatus(str, Enum):
+    """
+    Receiving document status
+    Serbian: Status prijema
+    """
+    NOVO = "novo"                          # New
+    U_TOKU = "u_toku"                      # In progress
+    ZAVRSENO = "završeno"                  # Completed (full)
+    ZAVRSENO_DJELIMICNO = "završeno_djelimično"  # Completed (partial)
+
+
+class ReceivingReason(str, Enum):
+    """
+    Reasons for receiving discrepancies
+    Serbian: Razlog odstupanja u prijemu
+    """
+    MANJAK = "manjak"                      # Shortage
+    VISAK = "višak"                        # Overage
+    OSTECENO = "oštećeno"                  # Damaged
+    NIJE_ISPORUCENO = "nije_isporučeno"    # Not delivered
+    DRUGO = "drugo"                        # Other (custom reason)
+
+
+class ReceivingItemStatus(str, Enum):
+    """
+    Receiving item status
+    Serbian: Status stavke prijema
+    """
+    NOVO = "novo"          # New
+    U_TOKU = "u_toku"      # In progress
+    GOTOVO = "gotovo"      # Done
