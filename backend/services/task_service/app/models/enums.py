@@ -117,6 +117,17 @@ class AuditAction(str, Enum):
     ITEM_CLOSED = "ITEM_CLOSED"
     DOC_COMPLETED_PARTIAL = "DOC_COMPLETED_PARTIAL"
     DOC_COMPLETED_FULL = "DOC_COMPLETED_FULL"
+    
+    # AI Intelligence Layer actions (Phase 4)
+    AI_BIN_SUGGESTED = "AI_BIN_SUGGESTED"
+    AI_BIN_ACCEPTED = "AI_BIN_ACCEPTED"
+    AI_BIN_REJECTED = "AI_BIN_REJECTED"
+    AI_RESTOCK_SUGGESTED = "AI_RESTOCK_SUGGESTED"
+    AI_RESTOCK_APPROVED = "AI_RESTOCK_APPROVED"
+    AI_RESTOCK_REJECTED = "AI_RESTOCK_REJECTED"
+    AI_ANOMALY_DETECTED = "AI_ANOMALY_DETECTED"
+    AI_ANOMALY_ACK = "AI_ANOMALY_ACK"
+    AI_ANOMALY_RESOLVED = "AI_ANOMALY_RESOLVED"
 
 
 class SchedulerLogStatus(str, Enum):
@@ -220,3 +231,30 @@ class CycleCountStatus(str, Enum):
     IN_PROGRESS = "in_progress"  # U toku
     COMPLETED = "completed"      # Završeno
     CANCELLED = "cancelled"      # Otkazano
+
+
+# ============================================================================
+# AI INTELLIGENCE LAYER - PHASE 4
+# ============================================================================
+
+class AnomalySeverity(str, Enum):
+    """
+    Anomaly severity levels
+    Serbian: Nivo ozbiljnosti anomalije
+    """
+    LOW = "low"              # Niska
+    MEDIUM = "medium"        # Srednja
+    HIGH = "high"            # Visoka
+    CRITICAL = "critical"    # Kritična
+
+
+class AnomalyStatus(str, Enum):
+    """
+    Anomaly status
+    Serbian: Status anomalije
+    """
+    NEW = "new"                          # Nova
+    ACKNOWLEDGED = "acknowledged"        # Primljeno na znanje
+    IN_PROGRESS = "in_progress"          # U obradi
+    RESOLVED = "resolved"                # Rešeno
+    FALSE_POSITIVE = "false_positive"    # Lažna dojava
