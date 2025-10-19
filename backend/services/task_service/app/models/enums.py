@@ -128,6 +128,22 @@ class AuditAction(str, Enum):
     AI_ANOMALY_DETECTED = "AI_ANOMALY_DETECTED"
     AI_ANOMALY_ACK = "AI_ANOMALY_ACK"
     AI_ANOMALY_RESOLVED = "AI_ANOMALY_RESOLVED"
+    
+    # IoT Integration Layer actions (Phase 5)
+    RFID_EVENT_RECEIVED = "RFID_EVENT_RECEIVED"
+    RFID_TAG_BOUND = "RFID_TAG_BOUND"
+    RFID_TAG_UNBOUND = "RFID_TAG_UNBOUND"
+    DOOR_COMMAND_ISSUED = "DOOR_COMMAND_ISSUED"
+    DOOR_COMMAND_BLOCKED = "DOOR_COMMAND_BLOCKED"
+    DOOR_AUTO_CLOSE = "DOOR_AUTO_CLOSE"
+    PHOTO_ATTACHED = "PHOTO_ATTACHED"
+    TELEMETRY_REPORTED = "TELEMETRY_REPORTED"
+    TELEMETRY_ALERT_RAISED = "TELEMETRY_ALERT_RAISED"
+    TELEMETRY_ALERT_ACKED = "TELEMETRY_ALERT_ACKED"
+    VISION_COUNT_STARTED = "VISION_COUNT_STARTED"
+    VISION_COUNT_SUBMITTED = "VISION_COUNT_SUBMITTED"
+    VISION_COUNT_APPROVED = "VISION_COUNT_APPROVED"
+    VISION_COUNT_REJECTED = "VISION_COUNT_REJECTED"
 
 
 class SchedulerLogStatus(str, Enum):
@@ -258,3 +274,41 @@ class AnomalyStatus(str, Enum):
     IN_PROGRESS = "in_progress"          # U obradi
     RESOLVED = "resolved"                # Rešeno
     FALSE_POSITIVE = "false_positive"    # Lažna dojava
+
+
+# ============================================================================
+# IOT INTEGRATION LAYER - PHASE 5
+# ============================================================================
+
+class RFIDEventType(str, Enum):
+    """
+    RFID event types
+    Serbian: Tip RFID događaja
+    """
+    ENTRY = "entry"      # Ulaz
+    EXIT = "exit"        # Izlaz
+    READ = "read"        # Čitanje
+    WRITE = "write"      # Pisanje
+
+
+class DoorStatus(str, Enum):
+    """
+    Industrial door status
+    Serbian: Status vrata
+    """
+    OPEN = "open"            # Otvoreno
+    CLOSED = "closed"        # Zatvoreno
+    OPENING = "opening"      # Otvara se
+    CLOSING = "closing"      # Zatvara se
+    STOPPED = "stopped"      # Zaustavljeno
+    ERROR = "error"          # Greška
+
+
+class TelemetryAlertSeverity(str, Enum):
+    """
+    Telemetry alert severity
+    Serbian: Ozbiljnost alarma
+    """
+    INFO = "info"            # Informativno
+    WARNING = "warning"      # Upozorenje
+    CRITICAL = "critical"    # Kritično
